@@ -1,10 +1,20 @@
 import { z } from "zod";
 
+export const problemModifiersSchema = z.object({
+  includeFractions: z.boolean().default(false),
+  includeUnknownConstants: z.boolean().default(false),
+  noDesmos: z.boolean().default(false),
+  wordProblemsOnly: z.boolean().default(false),
+  multiStepOnly: z.boolean().default(false),
+  gridInOnly: z.boolean().default(false),
+}).optional();
+
 export const generateRequestSchema = z.object({
   category: z.string().min(1, "Category is required"),
   subcategory: z.string().min(1, "Subcategory is required"),
   difficulty: z.enum(["easy", "medium", "hard"]),
   questionCount: z.union([z.literal(10), z.literal(15), z.literal(20)]),
+  modifiers: problemModifiersSchema,
 });
 
 export type GenerateRequestInput = z.infer<typeof generateRequestSchema>;

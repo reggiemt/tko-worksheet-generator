@@ -1,5 +1,5 @@
 import { getSubcategoryById } from "./categories";
-import type { Difficulty } from "./types";
+import type { Difficulty, ProblemModifiers } from "./types";
 
 export const SYSTEM_PROMPT = `You are an expert SAT Math problem generator. Your role is to create authentic, high-quality SAT practice problems that match the style, difficulty, and format of real College Board SAT Math questions.
 
@@ -148,7 +148,8 @@ export function buildUserPrompt(
   category: string,
   subcategory: string,
   difficulty: Difficulty,
-  questionCount: number
+  questionCount: number,
+  modifiers?: ProblemModifiers
 ): string {
   const subcategoryInfo = getSubcategoryById(category, subcategory);
   const topicName = subcategoryInfo?.name ?? subcategory;
@@ -160,16 +161,64 @@ export function buildUserPrompt(
     hard: "Create challenging problems with multi-step reasoning (3+ steps). Include problems that combine multiple concepts and require strategic thinking.",
   };
 
+  // Build modifier instructions
+  const modifierInstructions: string[] = [];
+
+  if (modifiers?.includeFractions) {
+    modifierInstructions.push(
+      "**FRACTIONS REQUIRED:** Every problem must meaningfully involve fractions — fractional coefficients (e.g., ⅔x), fractional answers, fraction arithmetic, or fractional expressions. Do not use only whole numbers."
+    );
+  }
+
+  if (modifiers?.includeUnknownConstants) {
+    modifierInstructions.push(
+      '**UNKNOWN CONSTANTS REQUIRED:** Every problem must include at least one unknown constant (k, a, c, m, etc.) that the student must solve for or reason about. Examples: "For what value of k does the equation have no solution?", "If the system has infinitely many solutions, what is the value of a?"'
+    );
+  }
+
+  if (modifiers?.noDesmos) {
+    modifierInstructions.push(
+      "**NO-DESMOS PROBLEMS:** Create problems that CANNOT be efficiently solved by graphing on Desmos or plugging in values. Focus on: algebraic manipulation and simplification, interpreting what variables/expressions represent, determining equivalent expressions, reasoning about structure and form, problems where the answer is an expression (not a number), conceptual understanding questions. Avoid problems where graphing two sides of an equation or plugging in answer choices would work."
+    );
+  }
+
+  if (modifiers?.wordProblemsOnly) {
+    modifierInstructions.push(
+      "**WORD PROBLEMS ONLY:** Every problem must be presented as a real-world context or scenario. No bare equations or pure symbolic manipulation. Use contexts like: science experiments, business/economics, population growth, construction, travel, surveys, sports statistics, etc."
+    );
+  }
+
+  if (modifiers?.multiStepOnly) {
+    modifierInstructions.push(
+      "**MULTI-STEP ONLY:** Every problem must require at least 2-3 distinct steps to solve. No single-step calculations or direct formula plugging. Students should need to: set up an equation, then solve it; combine multiple concepts; work through intermediate results before reaching the answer."
+    );
+  }
+
+  if (modifiers?.gridInOnly) {
+    modifierInstructions.push(
+      "**ALL GRID-IN:** Every problem must be a student-produced response (grid-in) with NO multiple choice options. Set isGridIn to true and choices to null for ALL problems. Answers must fit grid-in constraints (0-9999, simple fractions, or decimals)."
+    );
+  }
+
+  const modifierSection = modifierInstructions.length > 0
+    ? `\n\n## Special Constraints\n${modifierInstructions.join("\n\n")}`
+    : "";
+
+  // Adjust grid-in instruction based on gridInOnly modifier
+  const gridInInstruction = modifiers?.gridInOnly
+    ? `2. ALL problems should be grid-in (student-produced response) — no multiple choice`
+    : `2. Include ${Math.max(1, Math.floor(questionCount / 6))} to ${Math.ceil(questionCount / 5)} grid-in (student-produced response) problems`;
+
   return `Generate exactly ${questionCount} SAT Math problems for the topic: ${topicName}
 
 Topic description: ${topicDescription}
 
 Difficulty level: ${difficulty.toUpperCase()}
-${difficultyGuide[difficulty]}
+${difficultyGuide[difficulty]}${modifierSection}
 
 Requirements:
 1. Create exactly ${questionCount} problems numbered 1 through ${questionCount}
-2. Include ${Math.max(1, Math.floor(questionCount / 6))} to ${Math.ceil(questionCount / 5)} grid-in (student-produced response) problems
+${gridInInstruction}
 3. Include visual elements (TikZ graphics) for approximately ${Math.round(questionCount * 0.3)} problems where appropriate for this topic
 4. Use the reverse construction method - start with clean answers
 5. Verify each answer mathematically before including

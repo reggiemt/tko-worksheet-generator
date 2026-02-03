@@ -1,12 +1,13 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompts";
-import type { Difficulty, GeneratedWorksheet, Problem, Answer } from "./types";
+import type { Difficulty, GeneratedWorksheet, Problem, Answer, ProblemModifiers } from "./types";
 
 interface GenerateParams {
   category: string;
   subcategory: string;
   difficulty: Difficulty;
   questionCount: number;
+  modifiers?: ProblemModifiers;
 }
 
 function getClient(): Anthropic {
@@ -24,7 +25,8 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
     params.category,
     params.subcategory,
     params.difficulty,
-    params.questionCount
+    params.questionCount,
+    params.modifiers
   );
 
   const response = await client.messages.create({

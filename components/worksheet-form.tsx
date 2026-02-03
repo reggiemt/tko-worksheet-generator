@@ -8,8 +8,10 @@ import { ScreenshotUpload } from "./screenshot-upload";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Loader2, Download, AlertCircle, Camera, BookOpen } from "lucide-react";
-import type { Difficulty, QuestionCount, GenerateResponse } from "@/lib/types";
+import type { Difficulty, QuestionCount, GenerateResponse, ProblemModifiers } from "@/lib/types";
+import { DEFAULT_MODIFIERS } from "@/lib/types";
 import { getSubcategoryName } from "@/lib/categories";
+import { ProblemModifiersSelector } from "./problem-modifiers";
 
 type TabMode = "screenshot" | "manual";
 
@@ -22,6 +24,7 @@ export function WorksheetForm() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResponse | null>(null);
+  const [modifiers, setModifiers] = useState<ProblemModifiers>({ ...DEFAULT_MODIFIERS });
   const [screenshotDetected, setScreenshotDetected] = useState(false);
 
   const isFormValid = category && subcategory;
@@ -62,6 +65,7 @@ export function WorksheetForm() {
           subcategory,
           difficulty,
           questionCount,
+          modifiers,
         }),
       });
 
@@ -176,6 +180,11 @@ export function WorksheetForm() {
           {/* Shared: Question Count */}
           {(tab === "manual" || screenshotDetected) && (
             <QuestionCountSelector value={questionCount} onChange={setQuestionCount} />
+          )}
+
+          {/* Problem Modifiers */}
+          {(tab === "manual" || screenshotDetected) && (
+            <ProblemModifiersSelector value={modifiers} onChange={setModifiers} />
           )}
 
           {/* Error Display */}

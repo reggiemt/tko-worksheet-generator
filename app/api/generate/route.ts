@@ -25,7 +25,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       );
     }
 
-    const { category, subcategory, difficulty, questionCount } = parseResult.data;
+    const { category, subcategory, difficulty, questionCount, modifiers } = parseResult.data;
 
     // 3. Check rate limit
     const ip = getClientIp(request);
@@ -54,12 +54,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
     }
 
     // 5. Generate problems via Claude
-    console.log(`Generating ${questionCount} ${difficulty} problems for ${category}.${subcategory}`);
+    const activeModifiers = modifiers ? Object.entries(modifiers).filter(([, v]) => v).map(([k]) => k) : [];
+    console.log(`Generating ${questionCount} ${difficulty} problems for ${category}.${subcategory}${activeModifiers.length ? ` [modifiers: ${activeModifiers.join(", ")}]` : ""}`);
     const worksheet = await generateProblems({
       category,
       subcategory,
       difficulty,
       questionCount,
+      modifiers,
     });
 
     // 6. Build LaTeX documents

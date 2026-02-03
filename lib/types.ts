@@ -1,11 +1,30 @@
 export type Difficulty = "easy" | "medium" | "hard";
 export type QuestionCount = 10 | 15 | 20;
 
+export interface ProblemModifiers {
+  includeFractions: boolean;
+  includeUnknownConstants: boolean;
+  noDesmos: boolean;
+  wordProblemsOnly: boolean;
+  multiStepOnly: boolean;
+  gridInOnly: boolean;
+}
+
+export const DEFAULT_MODIFIERS: ProblemModifiers = {
+  includeFractions: false,
+  includeUnknownConstants: false,
+  noDesmos: false,
+  wordProblemsOnly: false,
+  multiStepOnly: false,
+  gridInOnly: false,
+};
+
 export interface GenerateRequest {
   category: string;
   subcategory: string;
   difficulty: Difficulty;
   questionCount: QuestionCount;
+  modifiers?: ProblemModifiers;
 }
 
 export interface AnalyzeRequest {
