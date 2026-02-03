@@ -39,7 +39,14 @@ export function UsageBanner({ onLimitReached, refreshKey, hideWhenAuthenticated 
     fetchUsage();
   }, [refreshKey]);
 
-  if (!usage) return null;
+  // Show default while loading
+  if (!usage) {
+    return (
+      <div className="text-xs text-center text-muted-foreground">
+        5 free worksheets per month
+      </div>
+    );
+  }
 
   // Hide when logged in — AccountStatus panel handles display
   if (hideWhenAuthenticated && usage.authenticated) return null;

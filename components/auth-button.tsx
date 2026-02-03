@@ -23,7 +23,18 @@ export function AuthButton() {
       .catch(() => {});
   }, []);
 
-  if (!auth) return null;
+  if (!auth) {
+    // Show sign in while loading
+    return (
+      <a
+        href="/api/auth/signin"
+        className="flex items-center gap-1.5 text-sm text-[#1a365d] hover:text-[#e53e3e] transition-colors font-medium"
+      >
+        <LogIn className="h-4 w-4" />
+        <span className="hidden sm:block">Sign In</span>
+      </a>
+    );
+  }
 
   if (auth.authenticated) {
     return (
