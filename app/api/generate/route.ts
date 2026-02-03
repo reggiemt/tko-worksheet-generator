@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateProblems } from "@/lib/claude-client";
 import { compileLaTeX } from "@/lib/latex-client";
 import { buildWorksheetLatex, buildAnswerKeyLatex } from "@/lib/latex-templates";
-import { checkGenerateRateLimit, getClientIp } from "@/lib/rate-limit";
+import {
+  checkFreeRateLimit,
+  incrementFreeUsage,
+  checkPaidRateLimit,
+  incrementPaidUsage,
+  getClientIp,
+} from "@/lib/rate-limit";
+import type { SubscriptionTier } from "@/lib/rate-limit";
 import { generateRequestSchema } from "@/lib/validators";
 import type { GenerateResponse } from "@/lib/types";
 
@@ -27,19 +34,40 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
 
     const { category, subcategory, difficulty, questionCount, modifiers } = parseResult.data;
 
-    // 3. Check rate limit
+    // 3. Check rate limit based on auth status
     const ip = getClientIp(request);
-    const rateLimitResult = await checkGenerateRateLimit(ip);
 
-    if (!rateLimitResult.success) {
-      const hoursRemaining = Math.ceil((rateLimitResult.reset - Date.now()) / 1000 / 60 / 60);
-      return NextResponse.json(
-        {
-          success: false,
-          error: `You've used your free worksheet for today. Come back in ${hoursRemaining} hour${hoursRemaining !== 1 ? "s" : ""} for another one! Need more practice? Visit tkoprep.com for personalized tutoring.`,
-        },
-        { status: 429 }
-      );
+    // TODO: Once auth is added, extract userId + tier from session
+    const userId: string | null = null;
+    const tier: SubscriptionTier = "free";
+
+    if (userId && tier !== "free") {
+      // Paid user — check monthly pool
+      const rateLimitResult = await checkPaidRateLimit(userId, tier);
+      if (!rateLimitResult.success) {
+        const daysRemaining = rateLimitResult.reset
+          ? Math.ceil((rateLimitResult.reset - Date.now()) / 1000 / 60 / 60 / 24)
+          : 0;
+        return NextResponse.json(
+          {
+            success: false,
+            error: `You've used all your worksheets for this month. Your pool resets in ${daysRemaining} day${daysRemaining !== 1 ? "s" : ""}. Upgrade your plan for more at /pricing.`,
+          },
+          { status: 429 }
+        );
+      }
+    } else {
+      // Free user — check 3-total limit
+      const rateLimitResult = await checkFreeRateLimit(ip);
+      if (!rateLimitResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "You've used all 3 of your free worksheets! Sign up for Starter ($5/mo) to get 30 worksheets per month, or Pro ($25/mo) for 100.",
+          },
+          { status: 429 }
+        );
+      }
     }
 
     // 4. Verify server API key is available
@@ -54,8 +82,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
     }
 
     // 5. Generate problems via Claude
-    const activeModifiers = modifiers ? Object.entries(modifiers).filter(([, v]) => v).map(([k]) => k) : [];
-    console.log(`Generating ${questionCount} ${difficulty} problems for ${category}.${subcategory}${activeModifiers.length ? ` [modifiers: ${activeModifiers.join(", ")}]` : ""}`);
+    const activeModifiers = modifiers
+      ? Object.entries(modifiers)
+          .filter(([, v]) => v)
+          .map(([k]) => k)
+      : [];
+    console.log(
+      `Generating ${questionCount} ${difficulty} problems for ${category}.${subcategory}${activeModifiers.length ? ` [modifiers: ${activeModifiers.join(", ")}]` : ""}`
+    );
     const worksheet = await generateProblems({
       category,
       subcategory,
@@ -76,7 +110,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       compileLaTeX(answerKeyLatex),
     ]);
 
-    // 8. Return base64-encoded PDFs
+    // 8. Increment usage AFTER successful generation
+    if (userId && tier !== "free") {
+      await incrementPaidUsage(userId);
+    } else {
+      await incrementFreeUsage(ip);
+    }
+
+    // 9. Return base64-encoded PDFs
     console.log("Generation complete!");
     return NextResponse.json({
       success: true,
@@ -104,7 +145,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
         return NextResponse.json(
           {
             success: false,
-            error: "PDF generation failed. The AI-generated content may have formatting issues. Please try again.",
+            error:
+              "PDF generation failed. The AI-generated content may have formatting issues. Please try again.",
           },
           { status: 500 }
         );

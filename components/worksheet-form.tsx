@@ -12,6 +12,7 @@ import type { Difficulty, QuestionCount, GenerateResponse, ProblemModifiers } fr
 import { DEFAULT_MODIFIERS } from "@/lib/types";
 import { getSubcategoryName } from "@/lib/categories";
 import { ProblemModifiersSelector } from "./problem-modifiers";
+import { UsageBanner } from "./usage-banner";
 
 type TabMode = "screenshot" | "manual";
 
@@ -26,6 +27,8 @@ export function WorksheetForm() {
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [modifiers, setModifiers] = useState<ProblemModifiers>({ ...DEFAULT_MODIFIERS });
   const [screenshotDetected, setScreenshotDetected] = useState(false);
+  const [usageRefreshKey, setUsageRefreshKey] = useState(0);
+  const [limitReached, setLimitReached] = useState(false);
 
   const isFormValid = category && subcategory;
 
@@ -76,6 +79,8 @@ export function WorksheetForm() {
       }
 
       setResult(data);
+      // Refresh usage counter after successful generation
+      setUsageRefreshKey((k) => k + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
@@ -109,6 +114,14 @@ export function WorksheetForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto border-[#1a365d]/20 shadow-lg">
       <CardContent className="pt-6">
+        {/* Usage Banner */}
+        <div className="mb-4">
+          <UsageBanner
+            refreshKey={usageRefreshKey}
+            onLimitReached={() => setLimitReached(true)}
+          />
+        </div>
+
         {/* Tab Switcher */}
         <div className="flex rounded-lg bg-muted p-1 mb-6">
           <button
@@ -229,11 +242,13 @@ export function WorksheetForm() {
           {/* Generate Button */}
           <Button
             type="submit"
-            disabled={!isFormValid || isGenerating}
+            disabled={!isFormValid || isGenerating || limitReached}
             className="w-full bg-[#1a365d] hover:bg-[#1a365d]/90 text-white"
             size="lg"
           >
-            {isGenerating ? (
+            {limitReached ? (
+              "Upgrade to Generate More"
+            ) : isGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Generating your worksheet...
@@ -244,7 +259,8 @@ export function WorksheetForm() {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Free: 1 worksheet per day • Powered by AI with verified answers
+            Powered by AI with verified answers •{" "}
+            <a href="/pricing" className="underline hover:text-[#1a365d]">View plans</a>
           </p>
         </form>
       </CardContent>
