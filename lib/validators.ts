@@ -1,0 +1,20 @@
+import { z } from "zod";
+
+export const generateRequestSchema = z.object({
+  category: z.string().min(1, "Category is required"),
+  subcategory: z.string().min(1, "Subcategory is required"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  questionCount: z.union([z.literal(10), z.literal(15), z.literal(20)]),
+});
+
+export type GenerateRequestInput = z.infer<typeof generateRequestSchema>;
+
+export const analyzeRequestSchema = z.object({
+  image: z.string().min(1, "Image data is required"),
+});
+
+export type AnalyzeRequestInput = z.infer<typeof analyzeRequestSchema>;
+
+// Max image size: 10MB in base64 (~13.3MB string)
+export const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+export const MAX_IMAGE_BASE64_LENGTH = Math.ceil(MAX_IMAGE_SIZE * 1.37);
