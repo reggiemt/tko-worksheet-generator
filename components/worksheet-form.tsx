@@ -13,6 +13,7 @@ import { DEFAULT_MODIFIERS } from "@/lib/types";
 import { getSubcategoryName } from "@/lib/categories";
 import { ProblemModifiersSelector } from "./problem-modifiers";
 import { UsageBanner } from "./usage-banner";
+import { AccountStatus } from "./account-status";
 
 type TabMode = "screenshot" | "manual";
 
@@ -114,6 +115,9 @@ export function WorksheetForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto border-[#1a365d]/20 shadow-lg">
       <CardContent className="pt-6">
+        {/* Account Status (logged in users) */}
+        <AccountStatus />
+
         {/* Usage Banner */}
         <div className="mb-4">
           <UsageBanner

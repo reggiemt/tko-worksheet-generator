@@ -2,17 +2,20 @@ import { Redis } from "@upstash/redis";
 import type { RateLimitResult } from "./types";
 
 // Vercel KV auto-sets these env vars (same as Upstash)
-const isRedisConfigured = !!(
-  process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
-) || !!(
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-);
+// Vercel KV sets various env var names depending on how it was linked
+const redisUrl = process.env.KV_REST_API_URL
+  || process.env.KV_URL
+  || process.env.UPSTASH_REDIS_REST_URL
+  || process.env.REDIS_URL;
+const redisToken = process.env.KV_REST_API_TOKEN
+  || process.env.KV_REST_API_TOKEN
+  || process.env.UPSTASH_REDIS_REST_TOKEN
+  || process.env.REDIS_TOKEN;
+
+const isRedisConfigured = !!(redisUrl && redisToken);
 
 const redis = isRedisConfigured
-  ? new Redis({
-      url: (process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL)!,
-      token: (process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN)!,
-    })
+  ? new Redis({ url: redisUrl!, token: redisToken! })
   : null;
 
 // ── Tier definitions ──────────────────────────────────────────────
