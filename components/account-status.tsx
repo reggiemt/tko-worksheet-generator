@@ -108,12 +108,29 @@ export function AccountStatus() {
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
-            {usage.tier !== "free" && (
+            {usage.tier !== "free" && usage.tier !== "unlimited" && (
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/billing", { method: "POST" });
+                    const data = await res.json();
+                    if (data.url) window.location.href = data.url;
+                    else alert(data.error || "Could not open billing portal");
+                  } catch {
+                    alert("Something went wrong");
+                  }
+                }}
+                className="text-xs text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+              >
+                Manage subscription
+              </button>
+            )}
+            {usage.tier === "free" && (
               <a
                 href="/pricing"
                 className="text-xs text-slate-500 hover:text-slate-700 transition-colors"
               >
-                Manage subscription
+                Upgrade
               </a>
             )}
             <a
