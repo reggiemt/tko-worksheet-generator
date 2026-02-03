@@ -1,4 +1,5 @@
 import { Check } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 const PLANS = [
@@ -7,9 +8,9 @@ const PLANS = [
     price: "$0",
     period: "",
     description: "Try it out",
-    worksheets: "3 worksheets total",
+    worksheets: "5 worksheets/month",
     features: [
-      "3 worksheets — ever",
+      "5 worksheets per month",
       "All topics & difficulty levels",
       "Problem modifiers",
       "PDF worksheet + answer key",
@@ -64,11 +65,18 @@ export default function PricingPage() {
       {/* Header */}
       <header className="border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#1a365d]">
-              TKO<span className="text-[#e53e3e]"> Prep</span>
-            </span>
-            <span className="text-sm text-muted-foreground">Worksheet Generator</span>
+          <Link href="/" className="flex items-center gap-3">
+            <Image
+              src="/tko-logo.png"
+              alt="TKO Prep"
+              width={32}
+              height={40}
+              className="h-8 w-auto"
+            />
+            <div className="flex flex-col">
+              <span className="text-lg font-bold text-[#1a365d] leading-tight">TKO Prep</span>
+              <span className="text-[10px] text-slate-500 leading-tight -mt-0.5">Worksheet Generator</span>
+            </div>
           </Link>
           <Link
             href="/"

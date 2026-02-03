@@ -13,32 +13,56 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SAT Worksheet Generator | Powered by TKO Prep",
+  title: "Free SAT Math Worksheet Generator | AI-Powered Practice | TKO Prep",
   description:
-    "Free AI-powered SAT math worksheet generator. Upload a screenshot of any SAT problem or choose a topic — get a professional practice worksheet with verified answers and detailed solutions. Powered by TKO Prep.",
+    "Generate custom SAT math practice worksheets instantly. Upload a problem screenshot or choose from 23 topics. Get printable PDFs with step-by-step answer keys. Free — no account required.",
   keywords: [
-    "SAT practice",
-    "SAT math",
-    "SAT worksheet",
-    "SAT prep",
-    "math practice",
-    "test preparation",
+    "SAT practice worksheets",
+    "SAT math practice",
+    "SAT worksheet generator",
+    "free SAT prep",
+    "SAT math problems",
+    "SAT test preparation",
+    "SAT practice test",
+    "SAT math tutor",
+    "digital SAT practice",
+    "SAT algebra practice",
+    "SAT geometry practice",
+    "College Board SAT prep",
     "TKO Prep",
-    "free SAT worksheets",
-    "SAT tutor",
+    "AI SAT tutor",
+    "printable SAT worksheets",
+    "SAT answer key",
+    "SAT score improvement",
+    "ACT math practice",
   ],
   openGraph: {
-    title: "Free SAT Practice Worksheet Generator | TKO Prep",
+    title: "Free SAT Math Worksheet Generator — Instant Custom Practice",
     description:
-      "Upload a screenshot or choose a topic. Get a professional SAT math practice worksheet with verified answers in seconds.",
+      "Stop searching for SAT practice problems. Generate custom worksheets with verified answers in seconds. 23 topics, 3 difficulty levels, printable PDFs. Free from TKO Prep.",
     type: "website",
-    siteName: "TKO Prep",
+    siteName: "TKO Prep Worksheet Generator",
+    url: "https://testprepsheets.com",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Free SAT Practice Worksheet Generator | TKO Prep",
+    title: "Free SAT Math Worksheet Generator — Instant Custom Practice",
     description:
-      "Upload a screenshot or choose a topic. Get a professional SAT math practice worksheet with verified answers in seconds.",
+      "Generate custom SAT math worksheets with verified answers in seconds. Upload a screenshot or choose a topic. Free from TKO Prep.",
+  },
+  alternates: {
+    canonical: "https://testprepsheets.com",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

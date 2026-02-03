@@ -61,12 +61,12 @@ export function UsageBanner({ onLimitReached, refreshKey }: UsageBannerProps) {
         <div className="text-sm">
           <p className="font-medium text-amber-800 dark:text-amber-200">
             {usage.tier === "free"
-              ? "You've used all 3 free worksheets"
+              ? "You've used all 5 free worksheets this month"
               : `You've used all ${usage.limit} worksheets ${periodLabel}`}
           </p>
           {usage.tier === "free" ? (
             <p className="mt-1 text-amber-700 dark:text-amber-300">
-              Upgrade to <strong>Starter ($5/mo)</strong> for 30 worksheets/month or{" "}
+              Need more practice? Upgrade to <strong>Starter ($5/mo)</strong> for 30 worksheets/month or{" "}
               <strong>Pro ($25/mo)</strong> for 100.{" "}
               <a href="/pricing" className="underline font-medium">
                 View plans →

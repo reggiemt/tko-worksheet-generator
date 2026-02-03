@@ -25,7 +25,7 @@ interface TierLimits {
 }
 
 export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
-  free: { maxGenerations: 3, period: "total", label: "Free" },
+  free: { maxGenerations: 5, period: "month", label: "Free" },
   starter: { maxGenerations: 30, period: "month", label: "Starter" },
   pro: { maxGenerations: 100, period: "month", label: "Pro" },
 };
@@ -33,7 +33,8 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
 // ── Free tier tracking (no login required) ────────────────────────
 
 function getFreeKey(ip: string): string {
-  return `worksheet:free:${ip}`;
+  const month = new Date().toISOString().slice(0, 7); // YYYY-MM
+  return `worksheet:free:${ip}:${month}`;
 }
 
 export async function checkFreeRateLimit(ip: string): Promise<RateLimitResult> {
@@ -46,26 +47,38 @@ export async function checkFreeRateLimit(ip: string): Promise<RateLimitResult> {
   const count = (await redis.get<number>(key)) || 0;
   const limit = TIER_LIMITS.free.maxGenerations;
 
+  // Reset at end of month
+  const now = new Date();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
   if (count >= limit) {
     return {
       success: false,
       remaining: 0,
-      reset: 0, // No reset — 3 total forever
+      reset: endOfMonth.getTime(),
     };
   }
 
   return {
     success: true,
     remaining: limit - count,
-    reset: 0,
+    reset: endOfMonth.getTime(),
   };
 }
 
 export async function incrementFreeUsage(ip: string): Promise<void> {
   if (!redis) return;
   const key = getFreeKey(ip);
+  const exists = await redis.exists(key);
   await redis.incr(key);
-  // No expiry — "3 total ever"
+
+  if (!exists) {
+    // Expire at end of month + 1 day buffer
+    const now = new Date();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 2);
+    const ttlSeconds = Math.ceil((endOfMonth.getTime() - now.getTime()) / 1000);
+    await redis.expire(key, ttlSeconds);
+  }
 }
 
 // ── Paid tier tracking (requires userId) ──────────────────────────
