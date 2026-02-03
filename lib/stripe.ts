@@ -30,12 +30,28 @@ export const PLAN_CONFIG = {
     price: 500, // $5.00 in cents
     worksheets: 30,
     interval: "month" as const,
+    mode: "subscription" as const,
   },
   pro: {
     name: "Pro",
     price: 2500, // $25.00 in cents
     worksheets: 100,
     interval: "month" as const,
+    mode: "subscription" as const,
+  },
+  "pro-annual": {
+    name: "Pro Annual",
+    price: 20000, // $200.00 in cents
+    worksheets: 100,
+    interval: "year" as const,
+    mode: "subscription" as const,
+  },
+  enterprise: {
+    name: "Enterprise",
+    price: 9900, // $99.00 in cents
+    worksheets: 500,
+    interval: "month" as const,
+    mode: "subscription" as const,
   },
 };
 

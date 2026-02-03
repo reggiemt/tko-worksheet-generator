@@ -45,6 +45,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Create checkout session
+    const description = plan.interval === "year"
+      ? `${plan.worksheets} SAT worksheets/month (annual plan)`
+      : `${plan.worksheets} SAT worksheets per month`;
+
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest) {
             currency: "usd",
             product_data: {
               name: `Test Prep Sheets — ${plan.name} Plan`,
-              description: `${plan.worksheets} SAT worksheets per month`,
+              description,
             },
             unit_amount: plan.price,
             recurring: {

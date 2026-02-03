@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { setSubscription } from "@/lib/subscription";
 import type { SubscriptionTier } from "@/lib/rate-limit";
 
-const VALID_TIERS: SubscriptionTier[] = ["free", "starter", "pro", "unlimited"];
+const VALID_TIERS: SubscriptionTier[] = ["free", "starter", "pro", "enterprise", "unlimited"];
 
 export async function POST(request: NextRequest) {
   try {

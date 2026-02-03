@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 interface SubscribeButtonProps {
-  planId: "starter" | "pro";
+  planId: "starter" | "pro" | "pro-annual" | "enterprise";
   label: string;
   className?: string;
 }

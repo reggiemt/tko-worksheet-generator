@@ -26,10 +26,10 @@ export function AccountStatus() {
 
   if (!usage || !usage.authenticated) return null;
 
-  const tierIcon = usage.tier === "unlimited" ? Crown : usage.tier === "pro" ? Crown : usage.tier === "starter" ? Zap : User;
+  const tierIcon = usage.tier === "unlimited" ? Crown : usage.tier === "enterprise" ? Crown : usage.tier === "pro" ? Crown : usage.tier === "starter" ? Zap : User;
   const TierIcon = tierIcon;
-  const tierLabel = usage.tier === "unlimited" ? "Unlimited" : usage.tier === "pro" ? "Pro" : usage.tier === "starter" ? "Starter" : "Free";
-  const tierColor = usage.tier === "unlimited" ? "text-amber-600" : usage.tier === "pro" ? "text-purple-600" : usage.tier === "starter" ? "text-blue-600" : "text-slate-500";
+  const tierLabel = usage.tier === "unlimited" ? "Unlimited" : usage.tier === "enterprise" ? "Enterprise" : usage.tier === "pro" ? "Pro" : usage.tier === "starter" ? "Starter" : "Free";
+  const tierColor = usage.tier === "unlimited" ? "text-amber-600" : usage.tier === "enterprise" ? "text-emerald-600" : usage.tier === "pro" ? "text-purple-600" : usage.tier === "starter" ? "text-blue-600" : "text-slate-500";
   const isUnlimited = usage.tier === "unlimited";
   const progressPct = usage.limit > 0 ? Math.round((usage.used / usage.limit) * 100) : 0;
   const periodLabel = usage.period === "total" ? "" : "this month";

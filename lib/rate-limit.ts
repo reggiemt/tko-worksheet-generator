@@ -51,7 +51,7 @@ function getRedis(): Redis | null {
 }
 
 // ── Tier definitions ──────────────────────────────────────────────
-export type SubscriptionTier = "free" | "starter" | "pro" | "unlimited";
+export type SubscriptionTier = "free" | "starter" | "pro" | "enterprise" | "unlimited";
 
 interface TierLimits {
   maxGenerations: number;
@@ -63,6 +63,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   free: { maxGenerations: 5, period: "month", label: "Free" },
   starter: { maxGenerations: 30, period: "month", label: "Starter" },
   pro: { maxGenerations: 100, period: "month", label: "Pro" },
+  enterprise: { maxGenerations: 500, period: "month", label: "Enterprise" },
   unlimited: { maxGenerations: 999999, period: "month", label: "Unlimited" },
 };
 

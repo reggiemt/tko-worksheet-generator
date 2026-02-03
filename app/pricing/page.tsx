@@ -2,65 +2,167 @@ import { Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { SubscribeButton } from "@/components/subscribe-button";
+import { PricingToggle } from "@/components/pricing-toggle";
 
-const PLANS = [
-  {
-    name: "Free",
-    price: "$0",
-    period: "",
-    description: "Try it out",
-    worksheets: "5 worksheets/month",
-    features: [
-      "5 worksheets per month",
-      "All topics & difficulty levels",
-      "Problem modifiers",
-      "PDF worksheet + answer key",
-      "No account required",
-    ],
-    planId: null as null,
-    cta: "Get Started",
-    ctaHref: "/",
-    highlight: false,
-  },
-  {
-    name: "Starter",
-    price: "$5",
-    period: "/month",
-    description: "For regular practice",
-    worksheets: "30 worksheets/month",
-    features: [
-      "30 worksheets per month",
-      "All topics & difficulty levels",
-      "Problem modifiers",
-      "PDF worksheet + answer key",
-      "Screenshot upload & auto-detect",
-      "Use anytime — no daily cap",
-    ],
-    planId: "starter" as const,
-    cta: "Subscribe — $5/mo",
-    ctaHref: "#",
-    highlight: true,
-  },
-  {
-    name: "Pro",
-    price: "$25",
-    period: "/month",
-    description: "For serious prep",
-    worksheets: "100 worksheets/month",
-    features: [
-      "100 worksheets per month",
-      "All topics & difficulty levels",
-      "Problem modifiers",
-      "PDF worksheet + answer key",
-      "Screenshot upload & auto-detect",
-      "Priority generation",
-    ],
-    planId: "pro" as const,
-    cta: "Subscribe — $25/mo",
-    ctaHref: "#",
-    highlight: false,
-  },
-];
+const PLANS = {
+  monthly: [
+    {
+      name: "Free",
+      price: "$0",
+      period: "",
+      description: "Try it out",
+      worksheets: "5 worksheets/month",
+      features: [
+        "5 worksheets per month",
+        "All topics & difficulty levels",
+        "Problem modifiers",
+        "PDF worksheet + answer key",
+        "No account required",
+      ],
+      planId: null as null,
+      cta: "Get Started",
+      ctaHref: "/",
+      highlight: false,
+    },
+    {
+      name: "Starter",
+      price: "$5",
+      period: "/month",
+      description: "For regular practice",
+      worksheets: "30 worksheets/month",
+      features: [
+        "30 worksheets per month",
+        "All topics & difficulty levels",
+        "Problem modifiers",
+        "PDF worksheet + answer key",
+        "Screenshot upload & auto-detect",
+        "Use anytime — no daily cap",
+      ],
+      planId: "starter" as const,
+      cta: "Subscribe — $5/mo",
+      ctaHref: "#",
+      highlight: false,
+    },
+    {
+      name: "Pro",
+      price: "$25",
+      period: "/month",
+      description: "For serious prep",
+      worksheets: "100 worksheets/month",
+      features: [
+        "100 worksheets per month",
+        "All topics & difficulty levels",
+        "Problem modifiers",
+        "PDF worksheet + answer key",
+        "Screenshot upload & auto-detect",
+        "Priority generation",
+      ],
+      planId: "pro" as const,
+      cta: "Subscribe — $25/mo",
+      ctaHref: "#",
+      highlight: true,
+    },
+    {
+      name: "Enterprise",
+      price: "$99",
+      period: "/month",
+      description: "For schools & tutors",
+      worksheets: "500 worksheets/month",
+      features: [
+        "500 worksheets per month",
+        "All topics & difficulty levels",
+        "Problem modifiers",
+        "PDF worksheet + answer key",
+        "Screenshot upload & auto-detect",
+        "Priority generation",
+        "Ideal for tutoring companies",
+      ],
+      planId: "enterprise" as const,
+      cta: "Subscribe — $99/mo",
+      ctaHref: "#",
+      highlight: false,
+    },
+  ],
+  annual: [
+    {
+      name: "Free",
+      price: "$0",
+      period: "",
+      description: "Try it out",
+      worksheets: "5 worksheets/month",
+      features: [
+        "5 worksheets per month",
+        "All topics & difficulty levels",
+        "Problem modifiers",
+        "PDF worksheet + answer key",
+        "No account required",
+      ],
+      planId: null as null,
+      cta: "Get Started",
+      ctaHref: "/",
+      highlight: false,
+    },
+    {
+      name: "Starter",
+      price: "$5",
+      period: "/month",
+      description: "For regular practice",
+      worksheets: "30 worksheets/month",
+      features: [
+        "30 worksheets per month",
+        "All topics & difficulty levels",
+        "Problem modifiers",
+        "PDF worksheet + answer key",
+        "Screenshot upload & auto-detect",
+        "Use anytime — no daily cap",
+      ],
+      planId: "starter" as const,
+      cta: "Subscribe — $5/mo",
+      ctaHref: "#",
+      highlight: false,
+    },
+    {
+      name: "Pro",
+      price: "$200",
+      period: "/year",
+      savings: "Save $100",
+      description: "For serious prep",
+      worksheets: "100 worksheets/month",
+      features: [
+        "100 worksheets per month",
+        "All topics & difficulty levels",
+        "Problem modifiers",
+        "PDF worksheet + answer key",
+        "Screenshot upload & auto-detect",
+        "Priority generation",
+      ],
+      planId: "pro-annual" as const,
+      cta: "Subscribe — $200/year",
+      ctaHref: "#",
+      highlight: true,
+    },
+    {
+      name: "Enterprise",
+      price: "$99",
+      period: "/month",
+      description: "For schools & tutors",
+      worksheets: "500 worksheets/month",
+      features: [
+        "500 worksheets per month",
+        "All topics & difficulty levels",
+        "Problem modifiers",
+        "PDF worksheet + answer key",
+        "Screenshot upload & auto-detect",
+        "Priority generation",
+        "Ideal for tutoring companies",
+      ],
+      planId: "enterprise" as const,
+      cta: "Subscribe — $99/mo",
+      ctaHref: "#",
+      highlight: false,
+    },
+  ],
+};
 
 export default function PricingPage() {
   return (
@@ -92,7 +194,7 @@ export default function PricingPage() {
 
       <main className="container mx-auto px-4 py-16">
         {/* Title */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-[#1a365d] mb-4">
             SAT Practice, Your Way
           </h1>
@@ -102,84 +204,8 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.name}
-              className={`
-                relative rounded-2xl p-8 flex flex-col
-                ${plan.highlight
-                  ? "bg-[#1a365d] text-white shadow-xl scale-105 border-2 border-[#e53e3e]"
-                  : "bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-md"
-                }
-              `}
-            >
-              {plan.highlight && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#e53e3e] text-white text-sm font-medium rounded-full">
-                  Most Popular
-                </div>
-              )}
-
-              <div className="mb-6">
-                <h2 className={`text-xl font-bold ${plan.highlight ? "text-white" : "text-[#1a365d]"}`}>
-                  {plan.name}
-                </h2>
-                <p className={`text-sm mt-1 ${plan.highlight ? "text-gray-300" : "text-muted-foreground"}`}>
-                  {plan.description}
-                </p>
-              </div>
-
-              <div className="mb-6">
-                <span className={`text-4xl font-bold ${plan.highlight ? "text-white" : "text-[#1a365d]"}`}>
-                  {plan.price}
-                </span>
-                <span className={`text-sm ${plan.highlight ? "text-gray-300" : "text-muted-foreground"}`}>
-                  {plan.period}
-                </span>
-              </div>
-
-              <p className={`text-sm font-medium mb-4 ${plan.highlight ? "text-[#e53e3e]" : "text-[#e53e3e]"}`}>
-                {plan.worksheets}
-              </p>
-
-              <ul className="space-y-3 mb-8 flex-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <Check className={`h-4 w-4 shrink-0 mt-0.5 ${plan.highlight ? "text-green-400" : "text-green-600"}`} />
-                    <span className={`text-sm ${plan.highlight ? "text-gray-200" : "text-muted-foreground"}`}>
-                      {feature}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {plan.planId ? (
-                <SubscribeButton
-                  planId={plan.planId}
-                  label={plan.cta}
-                  className={`
-                    w-full block text-center py-3 px-6 rounded-lg font-medium text-sm transition-all cursor-pointer
-                    ${plan.highlight
-                      ? "bg-white text-[#1a365d] hover:bg-gray-100"
-                      : "bg-[#1a365d] text-white hover:bg-[#1a365d]/90"
-                    }
-                  `}
-                />
-              ) : (
-                <a
-                  href={plan.ctaHref}
-                  className={`
-                    block text-center py-3 px-6 rounded-lg font-medium text-sm transition-all
-                    bg-[#1a365d] text-white hover:bg-[#1a365d]/90
-                  `}
-                >
-                  {plan.cta}
-                </a>
-              )}
-            </div>
-          ))}
-        </div>
+        {/* Billing Toggle + Cards */}
+        <PricingToggle plans={PLANS} />
 
         {/* FAQ / Bottom CTA */}
         <div className="text-center mt-16">

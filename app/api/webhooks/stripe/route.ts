@@ -10,7 +10,8 @@ import type { SubscriptionTier } from "@/lib/rate-limit";
 import Stripe from "stripe";
 
 function getTierFromPlan(planMetadata: string | undefined): SubscriptionTier {
-  if (planMetadata === "pro") return "pro";
+  if (planMetadata === "enterprise") return "enterprise";
+  if (planMetadata === "pro" || planMetadata === "pro-annual") return "pro";
   if (planMetadata === "starter") return "starter";
   return "starter"; // default for unknown plans
 }
