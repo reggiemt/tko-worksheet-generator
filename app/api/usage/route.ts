@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUsageInfo, getClientIp } from "@/lib/rate-limit";
+import { getTierForEmail } from "@/lib/subscription";
+import { auth } from "@/auth";
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request);
 
-  // TODO: Once auth is added, get userId and tier from session
-  const usage = await getUsageInfo(ip);
+  // Check auth for paid tier
+  const session = await auth();
+  const userEmail = session?.user?.email || null;
+  const tier = userEmail ? await getTierForEmail(userEmail) : "free";
+  const userId = userEmail && tier !== "free" ? userEmail : null;
 
-  return NextResponse.json(usage);
+  const usage = await getUsageInfo(ip, userId || undefined, tier);
+
+  return NextResponse.json({
+    ...usage,
+    authenticated: !!session?.user,
+    email: userEmail,
+  });
 }

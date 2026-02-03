@@ -2,6 +2,8 @@ import { WorksheetForm } from "@/components/worksheet-form";
 import { Camera, Sparkles, Download, Star, Check, Zap, Target, Brain } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { AuthButton } from "@/components/auth-button";
+import { SubscribeButton } from "@/components/subscribe-button";
 
 export default function Home() {
   return (
@@ -27,6 +29,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <AuthButton />
             <Link
               href="/pricing"
               className="text-sm text-[#1a365d] hover:text-[#e53e3e] transition-colors font-medium hidden sm:block"
@@ -233,12 +236,11 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <a
-                  href="/pricing"
-                  className="block text-center py-2.5 px-4 rounded-lg bg-[#1a365d] text-white font-medium text-sm hover:bg-[#1a365d]/90 transition-colors"
-                >
-                  Subscribe — $5/mo
-                </a>
+                <SubscribeButton
+                  planId="starter"
+                  label="Subscribe — $5/mo"
+                  className="w-full block text-center py-2.5 px-4 rounded-lg bg-[#1a365d] text-white font-medium text-sm hover:bg-[#1a365d]/90 transition-colors cursor-pointer"
+                />
               </div>
 
               {/* Pro */}
@@ -257,12 +259,11 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <a
-                  href="/pricing"
-                  className="block text-center py-2.5 px-4 rounded-lg bg-white/20 text-white font-medium text-sm hover:bg-white/30 transition-colors"
-                >
-                  Subscribe — $25/mo
-                </a>
+                <SubscribeButton
+                  planId="pro"
+                  label="Subscribe — $25/mo"
+                  className="w-full block text-center py-2.5 px-4 rounded-lg bg-white/20 text-white font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
+                />
               </div>
             </div>
           </div>

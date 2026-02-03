@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { SubscribeButton } from "@/components/subscribe-button";
 
 const PLANS = [
   {
@@ -16,6 +17,7 @@ const PLANS = [
       "PDF worksheet + answer key",
       "No account required",
     ],
+    planId: null as null,
     cta: "Get Started",
     ctaHref: "/",
     highlight: false,
@@ -32,10 +34,11 @@ const PLANS = [
       "Problem modifiers",
       "PDF worksheet + answer key",
       "Screenshot upload & auto-detect",
-      "Usage dashboard",
+      "Use anytime — no daily cap",
     ],
-    cta: "Subscribe",
-    ctaHref: "#", // TODO: Stripe checkout link
+    planId: "starter" as const,
+    cta: "Subscribe — $5/mo",
+    ctaHref: "#",
     highlight: true,
   },
   {
@@ -50,11 +53,11 @@ const PLANS = [
       "Problem modifiers",
       "PDF worksheet + answer key",
       "Screenshot upload & auto-detect",
-      "Usage dashboard",
       "Priority generation",
     ],
-    cta: "Subscribe",
-    ctaHref: "#", // TODO: Stripe checkout link
+    planId: "pro" as const,
+    cta: "Subscribe — $25/mo",
+    ctaHref: "#",
     highlight: false,
   },
 ];
@@ -151,18 +154,29 @@ export default function PricingPage() {
                 ))}
               </ul>
 
-              <a
-                href={plan.ctaHref}
-                className={`
-                  block text-center py-3 px-6 rounded-lg font-medium text-sm transition-all
-                  ${plan.highlight
-                    ? "bg-white text-[#1a365d] hover:bg-gray-100"
-                    : "bg-[#1a365d] text-white hover:bg-[#1a365d]/90"
-                  }
-                `}
-              >
-                {plan.cta}
-              </a>
+              {plan.planId ? (
+                <SubscribeButton
+                  planId={plan.planId}
+                  label={plan.cta}
+                  className={`
+                    w-full block text-center py-3 px-6 rounded-lg font-medium text-sm transition-all cursor-pointer
+                    ${plan.highlight
+                      ? "bg-white text-[#1a365d] hover:bg-gray-100"
+                      : "bg-[#1a365d] text-white hover:bg-[#1a365d]/90"
+                    }
+                  `}
+                />
+              ) : (
+                <a
+                  href={plan.ctaHref}
+                  className={`
+                    block text-center py-3 px-6 rounded-lg font-medium text-sm transition-all
+                    bg-[#1a365d] text-white hover:bg-[#1a365d]/90
+                  `}
+                >
+                  {plan.cta}
+                </a>
+              )}
             </div>
           ))}
         </div>

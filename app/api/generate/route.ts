@@ -9,7 +9,8 @@ import {
   incrementPaidUsage,
   getClientIp,
 } from "@/lib/rate-limit";
-import type { SubscriptionTier } from "@/lib/rate-limit";
+import { getTierForEmail } from "@/lib/subscription";
+import { auth } from "@/auth";
 import { generateRequestSchema } from "@/lib/validators";
 import type { GenerateResponse } from "@/lib/types";
 
@@ -37,9 +38,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
     // 3. Check rate limit based on auth status
     const ip = getClientIp(request);
 
-    // TODO: Once auth is added, extract userId + tier from session
-    const userId: string | null = null;
-    const tier: SubscriptionTier = "free";
+    // Check auth session for paid tier
+    const session = await auth();
+    const userEmail = session?.user?.email || null;
+    const tier = userEmail ? await getTierForEmail(userEmail) : "free";
+    const userId = userEmail && tier !== "free" ? userEmail : null;
 
     if (userId && tier !== "free") {
       // Paid user — check monthly pool
