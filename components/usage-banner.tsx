@@ -14,10 +14,11 @@ interface UsageInfo {
 interface UsageBannerProps {
   onLimitReached?: () => void;
   refreshKey?: number; // increment to trigger refresh
+  hideWhenAuthenticated?: boolean;
 }
 
-export function UsageBanner({ onLimitReached, refreshKey }: UsageBannerProps) {
-  const [usage, setUsage] = useState<UsageInfo | null>(null);
+export function UsageBanner({ onLimitReached, refreshKey, hideWhenAuthenticated }: UsageBannerProps) {
+  const [usage, setUsage] = useState<(UsageInfo & { authenticated?: boolean }) | null>(null);
 
   const fetchUsage = async () => {
     try {
@@ -39,6 +40,9 @@ export function UsageBanner({ onLimitReached, refreshKey }: UsageBannerProps) {
   }, [refreshKey]);
 
   if (!usage) return null;
+
+  // Hide when logged in — AccountStatus panel handles display
+  if (hideWhenAuthenticated && usage.authenticated) return null;
 
   const isLow = usage.remaining <= 1 && usage.remaining > 0;
   const isOut = usage.remaining <= 0;

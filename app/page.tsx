@@ -330,6 +330,10 @@ export default function Home() {
           </div>
           <div className="mt-6 pt-4 border-t border-white/10 text-center text-xs text-white/50">
             © {new Date().getFullYear()} TKO Prep. SAT is a registered trademark of the College Board, which is not affiliated with TKO Prep.
+            <span className="mx-2">|</span>
+            <Link href="/privacy" className="hover:text-white/80">Privacy Policy</Link>
+            <span className="mx-2">|</span>
+            <Link href="/terms" className="hover:text-white/80">Terms of Service</Link>
           </div>
         </div>
       </footer>

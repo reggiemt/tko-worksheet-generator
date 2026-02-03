@@ -123,6 +123,7 @@ export function WorksheetForm() {
           <UsageBanner
             refreshKey={usageRefreshKey}
             onLimitReached={() => setLimitReached(true)}
+            hideWhenAuthenticated
           />
         </div>
 
