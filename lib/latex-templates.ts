@@ -6,30 +6,38 @@ function capitalize(str: string): string {
 }
 
 function escapeLatex(text: string): string {
-  // Don't escape if already contains LaTeX commands or math
-  if (text.includes("\\") || text.includes("$")) {
-    // Still escape bare special chars outside of commands/math
-    // This is a best-effort approach for mixed content
-    return text;
-  }
+  // For known plain text (headers, labels) - escape everything
   return text
+    .replace(/\\/g, "\\textbackslash{}")
     .replace(/%/g, "\\%")
     .replace(/&/g, "\\&")
     .replace(/#/g, "\\#")
     .replace(/_/g, "\\_")
     .replace(/\$/g, "\\$")
     .replace(/~/g, "\\textasciitilde{}")
-    .replace(/\^/g, "\\textasciicircum{}");
+    .replace(/\^/g, "\\textasciicircum{}")
+    .replace(/\{/g, "\\{")
+    .replace(/\}/g, "\\}");
 }
 
 function sanitizeLatexContent(text: string): string {
-  // For AI-generated content that may mix LaTeX and plain text
-  // Replace common problematic patterns
-  return text
-    .replace(/(?<!\\)%/g, "\\%")
-    .replace(/(?<!\\)&(?!\\)/g, "\\&")
-    .replace(/(?<!\\)#(?!\\)/g, "\\#")
-    .replace(/(?<![\\\$])_(?![{])/g, "\\_");
+  // For AI-generated content that mixes LaTeX commands/math with plain text.
+  // Strategy: split on math delimiters ($...$), escape only the non-math parts.
+  const parts = text.split(/(\$[^$]*\$)/g);
+  return parts
+    .map((part, i) => {
+      // Odd indices are math segments (between $ delimiters)
+      if (part.startsWith("$") && part.endsWith("$")) {
+        return part; // Leave math untouched
+      }
+      // Plain text segment — escape special chars but preserve LaTeX commands
+      return part
+        .replace(/(?<!\\)%/g, "\\%")
+        .replace(/(?<!\\)&(?!\\)/g, "\\&")
+        .replace(/(?<!\\)#/g, "\\#")
+        .replace(/(?<!\\)_(?![{])/g, "\\_");
+    })
+    .join("");
 }
 
 function buildProblemLatex(problem: Problem): string {

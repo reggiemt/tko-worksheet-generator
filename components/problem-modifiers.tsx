@@ -36,12 +36,6 @@ const MODIFIER_OPTIONS: ModifierOption[] = [
     icon: "📖",
   },
   {
-    key: "multiStepOnly",
-    label: "Multi-Step Only",
-    description: "Every problem requires 2+ steps to solve — no quick one-step solves",
-    icon: "🔗",
-  },
-  {
     key: "gridInOnly",
     label: "All Grid-In (No Multiple Choice)",
     description: "Student-produced responses only — no answer choices to guess from",

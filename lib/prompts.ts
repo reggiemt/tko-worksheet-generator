@@ -188,12 +188,6 @@ export function buildUserPrompt(
     );
   }
 
-  if (modifiers?.multiStepOnly) {
-    modifierInstructions.push(
-      "**MULTI-STEP ONLY:** Every problem must require at least 2-3 distinct steps to solve. No single-step calculations or direct formula plugging. Students should need to: set up an equation, then solve it; combine multiple concepts; work through intermediate results before reaching the answer."
-    );
-  }
-
   if (modifiers?.gridInOnly) {
     modifierInstructions.push(
       "**ALL GRID-IN:** Every problem must be a student-produced response (grid-in) with NO multiple choice options. Set isGridIn to true and choices to null for ALL problems. Answers must fit grid-in constraints (0-9999, simple fractions, or decimals)."

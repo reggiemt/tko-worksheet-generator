@@ -6,7 +6,6 @@ export interface ProblemModifiers {
   includeUnknownConstants: boolean;
   noDesmos: boolean;
   wordProblemsOnly: boolean;
-  multiStepOnly: boolean;
   gridInOnly: boolean;
 }
 
@@ -15,7 +14,6 @@ export const DEFAULT_MODIFIERS: ProblemModifiers = {
   includeUnknownConstants: false,
   noDesmos: false,
   wordProblemsOnly: false,
-  multiStepOnly: false,
   gridInOnly: false,
 };
 

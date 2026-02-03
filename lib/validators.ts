@@ -5,7 +5,6 @@ export const problemModifiersSchema = z.object({
   includeUnknownConstants: z.boolean().default(false),
   noDesmos: z.boolean().default(false),
   wordProblemsOnly: z.boolean().default(false),
-  multiStepOnly: z.boolean().default(false),
   gridInOnly: z.boolean().default(false),
 }).optional();
 
