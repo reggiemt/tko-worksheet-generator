@@ -19,8 +19,22 @@ function getRedisConfig(): { url: string; token: string } | null {
   return null;
 }
 
-const redisConfig = getRedisConfig();
-const redis = redisConfig ? new Redis(redisConfig) : null;
+let _subRedis: Redis | null | undefined = undefined;
+
+function getRedis(): Redis | null {
+  if (_subRedis !== undefined) return _subRedis;
+  const config = getRedisConfig();
+  if (config) {
+    try {
+      _subRedis = new Redis(config);
+    } catch {
+      _subRedis = null;
+    }
+  } else {
+    _subRedis = null;
+  }
+  return _subRedis;
+}
 
 export interface UserSubscription {
   email: string;
@@ -36,32 +50,32 @@ function getSubKey(email: string): string {
 }
 
 export async function getSubscription(email: string): Promise<UserSubscription | null> {
-  if (!redis) return null;
-  const data = await redis.get<UserSubscription>(getSubKey(email));
+  if (!getRedis()) return null;
+  const data = await getRedis()!.get<UserSubscription>(getSubKey(email));
   return data || null;
 }
 
 export async function setSubscription(sub: UserSubscription): Promise<void> {
-  if (!redis) return;
-  await redis.set(getSubKey(sub.email), sub);
+  if (!getRedis()) return;
+  await getRedis()!.set(getSubKey(sub.email), sub);
 }
 
 export async function deleteSubscription(email: string): Promise<void> {
-  if (!redis) return;
-  await redis.del(getSubKey(email));
+  if (!getRedis()) return;
+  await getRedis()!.del(getSubKey(email));
 }
 
 export async function getSubscriptionByCustomerId(customerId: string): Promise<UserSubscription | null> {
-  if (!redis) return null;
+  if (!getRedis()) return null;
   // Store a reverse lookup: customerId → email
-  const email = await redis.get<string>(`worksheet:customer:${customerId}`);
+  const email = await getRedis()!.get<string>(`worksheet:customer:${customerId}`);
   if (!email) return null;
   return getSubscription(email);
 }
 
 export async function setCustomerEmail(customerId: string, email: string): Promise<void> {
-  if (!redis) return;
-  await redis.set(`worksheet:customer:${customerId}`, email.toLowerCase().trim());
+  if (!getRedis()) return;
+  await getRedis()!.set(`worksheet:customer:${customerId}`, email.toLowerCase().trim());
 }
 
 export async function getTierForEmail(email: string): Promise<SubscriptionTier> {
