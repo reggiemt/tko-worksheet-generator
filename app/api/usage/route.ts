@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getUsageInfo, getClientIp, TIER_LIMITS } from "@/lib/rate-limit";
+import { getUsageInfo, getClientIp, TIER_LIMITS, type SubscriptionTier } from "@/lib/rate-limit";
 import { getTierForEmail } from "@/lib/subscription";
 import { auth } from "@/auth";
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const authenticated = !!session?.user;
 
     // Check tier with timeout (2 seconds max)
-    let tier: "free" | "starter" | "pro" = "free";
+    let tier: SubscriptionTier = "free";
     if (userEmail) {
       tier = await withTimeout(
         getTierForEmail(userEmail).catch(() => "free" as const),
