@@ -71,8 +71,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Admin set-tier error:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: "Internal server error." },
+      { error: "Internal server error.", details: message },
       { status: 500 }
     );
   }
