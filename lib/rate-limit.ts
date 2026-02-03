@@ -2,21 +2,40 @@ import { Redis } from "@upstash/redis";
 import type { RateLimitResult } from "./types";
 
 // Vercel KV auto-sets these env vars (same as Upstash)
-// Vercel KV sets various env var names depending on how it was linked
-const redisUrl = process.env.KV_REST_API_URL
-  || process.env.KV_URL
-  || process.env.UPSTASH_REDIS_REST_URL
-  || process.env.REDIS_URL;
-const redisToken = process.env.KV_REST_API_TOKEN
-  || process.env.KV_REST_API_TOKEN
-  || process.env.UPSTASH_REDIS_REST_TOKEN
-  || process.env.REDIS_TOKEN;
+// Parse Redis connection — supports REST API vars or redis:// protocol URL
+function getRedisConfig(): { url: string; token: string } | null {
+  // Preferred: REST API credentials
+  const restUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const restToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (restUrl && restToken) {
+    return { url: restUrl, token: restToken };
+  }
 
-const isRedisConfigured = !!(redisUrl && redisToken);
+  // Fallback: parse redis:// URL (from Vercel KV / Upstash)
+  // Format: redis://default:PASSWORD@HOSTNAME:PORT
+  const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
+  if (redisUrl) {
+    try {
+      const parsed = new URL(redisUrl);
+      const hostname = parsed.hostname;
+      const password = parsed.password;
+      if (hostname && password) {
+        return {
+          url: `https://${hostname}`,
+          token: password,
+        };
+      }
+    } catch {
+      console.error("Failed to parse REDIS_URL:", redisUrl?.substring(0, 30));
+    }
+  }
 
-const redis = isRedisConfigured
-  ? new Redis({ url: redisUrl!, token: redisToken! })
-  : null;
+  return null;
+}
+
+const redisConfig = getRedisConfig();
+const isRedisConfigured = !!redisConfig;
+const redis = redisConfig ? new Redis(redisConfig) : null;
 
 // ── Tier definitions ──────────────────────────────────────────────
 export type SubscriptionTier = "free" | "starter" | "pro";

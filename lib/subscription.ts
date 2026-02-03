@@ -1,20 +1,26 @@
 import { Redis } from "@upstash/redis";
 import type { SubscriptionTier } from "./rate-limit";
 
-const redisUrl = process.env.KV_REST_API_URL
-  || process.env.KV_URL
-  || process.env.UPSTASH_REDIS_REST_URL
-  || process.env.REDIS_URL;
-const redisToken = process.env.KV_REST_API_TOKEN
-  || process.env.KV_REST_API_TOKEN
-  || process.env.UPSTASH_REDIS_REST_TOKEN
-  || process.env.REDIS_TOKEN;
+function getRedisConfig(): { url: string; token: string } | null {
+  const restUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const restToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (restUrl && restToken) {
+    return { url: restUrl, token: restToken };
+  }
+  const redisUrl = process.env.REDIS_URL || process.env.KV_URL;
+  if (redisUrl) {
+    try {
+      const parsed = new URL(redisUrl);
+      if (parsed.hostname && parsed.password) {
+        return { url: `https://${parsed.hostname}`, token: parsed.password };
+      }
+    } catch { /* ignore */ }
+  }
+  return null;
+}
 
-const isRedisConfigured = !!(redisUrl && redisToken);
-
-const redis = isRedisConfigured
-  ? new Redis({ url: redisUrl!, token: redisToken! })
-  : null;
+const redisConfig = getRedisConfig();
+const redis = redisConfig ? new Redis(redisConfig) : null;
 
 export interface UserSubscription {
   email: string;
