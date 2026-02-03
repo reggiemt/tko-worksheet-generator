@@ -8,17 +8,32 @@ function capitalize(str: string): string {
 function escapeLatex(text: string): string {
   // Don't escape if already contains LaTeX commands or math
   if (text.includes("\\") || text.includes("$")) {
+    // Still escape bare special chars outside of commands/math
+    // This is a best-effort approach for mixed content
     return text;
   }
   return text
     .replace(/%/g, "\\%")
     .replace(/&/g, "\\&")
     .replace(/#/g, "\\#")
-    .replace(/_/g, "\\_");
+    .replace(/_/g, "\\_")
+    .replace(/\$/g, "\\$")
+    .replace(/~/g, "\\textasciitilde{}")
+    .replace(/\^/g, "\\textasciicircum{}");
+}
+
+function sanitizeLatexContent(text: string): string {
+  // For AI-generated content that may mix LaTeX and plain text
+  // Replace common problematic patterns
+  return text
+    .replace(/(?<!\\)%/g, "\\%")
+    .replace(/(?<!\\)&(?!\\)/g, "\\&")
+    .replace(/(?<!\\)#(?!\\)/g, "\\#")
+    .replace(/(?<![\\\$])_(?![{])/g, "\\_");
 }
 
 function buildProblemLatex(problem: Problem): string {
-  let latex = `\\problem\n${problem.content}\n`;
+  let latex = `\\problem\n${sanitizeLatexContent(problem.content)}\n`;
 
   if (problem.hasVisual && problem.visualCode) {
     latex += `\n\\begin{center}\n${problem.visualCode}\n\\end{center}\n`;
@@ -29,10 +44,10 @@ function buildProblemLatex(problem: Problem): string {
   } else if (problem.choices) {
     latex += `
 \\begin{enumerate}[label=\\Alph*., itemsep=0.3em]
-    \\item ${problem.choices.A}
-    \\item ${problem.choices.B}
-    \\item ${problem.choices.C}
-    \\item ${problem.choices.D}
+    \\item ${sanitizeLatexContent(problem.choices.A)}
+    \\item ${sanitizeLatexContent(problem.choices.B)}
+    \\item ${sanitizeLatexContent(problem.choices.C)}
+    \\item ${sanitizeLatexContent(problem.choices.D)}
 \\end{enumerate}
 `;
   }
@@ -135,8 +150,8 @@ ${problems.map((p) => buildProblemLatex(p)).join("\n\\vspace{1em}\n")}
 }
 
 function buildAnswerLatex(answer: Answer): string {
-  const solutionLines = answer.solution.split("\\n").join("\n\n");
-  return `\\textbf{${answer.number}. ${answer.correctAnswer}}
+  const solutionLines = sanitizeLatexContent(answer.solution).split("\\n").join("\n\n");
+  return `\\textbf{${answer.number}. ${sanitizeLatexContent(answer.correctAnswer)}}
 
 ${solutionLines}
 `;
