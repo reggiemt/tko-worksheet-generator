@@ -192,7 +192,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
               {/* Free */}
               <div className="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20">
                 <h3 className="text-lg font-bold text-white mb-1">Free</h3>
@@ -202,7 +202,7 @@ export default function Home() {
                 </p>
                 <p className="text-[#e53e3e] text-sm font-medium mb-5">5 worksheets/month</p>
                 <ul className="space-y-2 mb-6">
-                  {["5 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "No account needed"].map((f) => (
+                  {["5 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "No account needed"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="h-4 w-4 text-green-400 shrink-0" />
                       {f}
@@ -229,7 +229,7 @@ export default function Home() {
                 </p>
                 <p className="text-[#e53e3e] text-sm font-medium mb-5">30 worksheets/month</p>
                 <ul className="space-y-2 mb-6">
-                  {["30 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "Use anytime — no daily cap"].map((f) => (
+                  {["30 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "Multi-screenshot worksheets", "Use anytime — no daily cap"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
                       <Check className="h-4 w-4 text-green-600 shrink-0" />
                       {f}
@@ -252,7 +252,7 @@ export default function Home() {
                 </p>
                 <p className="text-[#e53e3e] text-sm font-medium mb-5">100 worksheets/month</p>
                 <ul className="space-y-2 mb-6">
-                  {["100 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "Priority generation"].map((f) => (
+                  {["100 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "Multi-screenshot worksheets", "Priority generation"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="h-4 w-4 text-green-400 shrink-0" />
                       {f}
@@ -262,6 +262,29 @@ export default function Home() {
                 <SubscribeButton
                   planId="pro"
                   label="Subscribe — $25/mo"
+                  className="w-full block text-center py-2.5 px-4 rounded-lg bg-white/20 text-white font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
+                />
+              </div>
+
+              {/* Enterprise */}
+              <div className="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20">
+                <h3 className="text-lg font-bold text-white mb-1">Enterprise</h3>
+                <p className="text-white/60 text-sm mb-4">For schools & tutors</p>
+                <p className="text-3xl font-bold text-white mb-1">
+                  $99<span className="text-sm font-normal text-white/60">/mo</span>
+                </p>
+                <p className="text-[#e53e3e] text-sm font-medium mb-5">500 worksheets/month</p>
+                <ul className="space-y-2 mb-6">
+                  {["500 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "Multi-screenshot worksheets", "Priority generation", "Ideal for tutoring companies"].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-white/80">
+                      <Check className="h-4 w-4 text-green-400 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <SubscribeButton
+                  planId="enterprise"
+                  label="Subscribe — $99/mo"
                   className="w-full block text-center py-2.5 px-4 rounded-lg bg-white/20 text-white font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
                 />
               </div>
