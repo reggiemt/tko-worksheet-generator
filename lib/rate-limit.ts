@@ -181,7 +181,8 @@ export async function getUsageInfo(
   tier?: SubscriptionTier
 ): Promise<UsageInfo> {
   if (!redis) {
-    return { tier: "free", used: 0, limit: 3, remaining: 3, period: "total" };
+    const limit = TIER_LIMITS.free.maxGenerations;
+    return { tier: "free", used: 0, limit, remaining: limit, period: "month" };
   }
 
   const effectiveTier = tier || "free";
