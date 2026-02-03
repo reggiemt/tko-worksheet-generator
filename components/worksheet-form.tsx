@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CategorySelector } from "./category-selector";
 import { DifficultySelector } from "./difficulty-selector";
 import { QuestionCountSelector } from "./question-count-selector";
-import { ScreenshotUpload } from "./screenshot-upload";
+import { ScreenshotUpload, type AnalysisResult } from "./screenshot-upload";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Loader2, Download, AlertCircle, Camera, BookOpen } from "lucide-react";
@@ -16,6 +16,16 @@ import { UsageBanner } from "./usage-banner";
 import { AccountStatus } from "./account-status";
 
 type TabMode = "screenshot" | "manual";
+
+interface UsageData {
+  tier: string;
+  used: number;
+  limit: number;
+  remaining: number;
+  period: string;
+  authenticated: boolean;
+  email: string | null;
+}
 
 export function WorksheetForm() {
   const [tab, setTab] = useState<TabMode>("screenshot");
@@ -31,6 +41,24 @@ export function WorksheetForm() {
   const [usageRefreshKey, setUsageRefreshKey] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
 
+  // Multi-screenshot state
+  const [multiTopics, setMultiTopics] = useState<{ category: string; subcategory: string }[]>([]);
+  const [multiEnabled, setMultiEnabled] = useState(false);
+  const [userTier, setUserTier] = useState<string>("free");
+
+  // Fetch user tier to determine multi-screenshot eligibility
+  useEffect(() => {
+    fetch("/api/usage")
+      .then((r) => r.json())
+      .then((data: UsageData) => {
+        const tier = data.tier || "free";
+        setUserTier(tier);
+        const paidTiers = ["starter", "pro", "enterprise", "unlimited"];
+        setMultiEnabled(data.authenticated && paidTiers.includes(tier));
+      })
+      .catch(() => {});
+  }, []);
+
   const isFormValid = category && subcategory;
 
   const handleCategoryChange = (value: string) => {
@@ -38,18 +66,35 @@ export function WorksheetForm() {
     setSubcategory("");
   };
 
-  const handleAnalysisComplete = (analysis: {
-    category: string;
-    subcategory: string;
-    difficulty: Difficulty;
-    description: string;
-  }) => {
+  const handleAnalysisComplete = (analysis: AnalysisResult) => {
     setCategory(analysis.category);
     setSubcategory(analysis.subcategory);
     setDifficulty(analysis.difficulty);
     setScreenshotDetected(true);
     setError(null);
     setResult(null);
+  };
+
+  const handleMultiAnalysisComplete = (results: AnalysisResult[]) => {
+    if (results.length === 0) {
+      setMultiTopics([]);
+      setScreenshotDetected(false);
+      return;
+    }
+    // Collect unique topic pairs
+    const topics = results.map((r) => ({
+      category: r.category,
+      subcategory: r.subcategory,
+    }));
+    setMultiTopics(topics);
+    setScreenshotDetected(true);
+    setError(null);
+    setResult(null);
+
+    // Use the first result's difficulty as default
+    if (results.length > 0) {
+      setDifficulty(results[0].difficulty);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,16 +106,24 @@ export function WorksheetForm() {
     setResult(null);
 
     try {
+      // Build request body
+      const body: Record<string, unknown> = {
+        category,
+        subcategory,
+        difficulty,
+        questionCount,
+        modifiers,
+      };
+
+      // If multi-screenshot detected, include topics array
+      if (multiTopics.length > 1) {
+        body.topics = multiTopics;
+      }
+
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category,
-          subcategory,
-          difficulty,
-          questionCount,
-          modifiers,
-        }),
+        body: JSON.stringify(body),
       });
 
       const data: GenerateResponse = await response.json();
@@ -100,14 +153,20 @@ export function WorksheetForm() {
 
   const handleDownloadWorksheet = () => {
     if (result?.worksheetPdf) {
-      const topicName = getSubcategoryName(category, subcategory).replace(/\s+/g, "_");
+      const topicName =
+        multiTopics.length > 1
+          ? "Mixed_Topics"
+          : getSubcategoryName(category, subcategory).replace(/\s+/g, "_");
       downloadPdf(result.worksheetPdf, `SAT_${topicName}_${difficulty}_worksheet.pdf`);
     }
   };
 
   const handleDownloadAnswerKey = () => {
     if (result?.answerKeyPdf) {
-      const topicName = getSubcategoryName(category, subcategory).replace(/\s+/g, "_");
+      const topicName =
+        multiTopics.length > 1
+          ? "Mixed_Topics"
+          : getSubcategoryName(category, subcategory).replace(/\s+/g, "_");
       downloadPdf(result.answerKeyPdf, `SAT_${topicName}_${difficulty}_answers.pdf`);
     }
   };
@@ -163,20 +222,43 @@ export function WorksheetForm() {
           {/* Screenshot Tab */}
           {tab === "screenshot" && (
             <div className="space-y-6">
-              <ScreenshotUpload onAnalysisComplete={handleAnalysisComplete} />
+              <ScreenshotUpload
+                onAnalysisComplete={handleAnalysisComplete}
+                onMultiAnalysisComplete={handleMultiAnalysisComplete}
+                multiEnabled={multiEnabled}
+              />
 
               {screenshotDetected && category && subcategory && (
                 <div className="space-y-4 p-4 rounded-lg bg-[#1a365d]/5 border border-[#1a365d]/10">
-                  <p className="text-sm font-medium text-[#1a365d]">
-                    Detected topic — adjust if needed:
-                  </p>
-                  <CategorySelector
-                    category={category}
-                    subcategory={subcategory}
-                    onCategoryChange={handleCategoryChange}
-                    onSubcategoryChange={setSubcategory}
-                  />
-                  <DifficultySelector value={difficulty} onChange={setDifficulty} />
+                  {multiTopics.length > 1 ? (
+                    <>
+                      <p className="text-sm font-medium text-[#1a365d]">
+                        🎯 {multiTopics.length} topics detected — generating a mixed-topic worksheet:
+                      </p>
+                      <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+                        {multiTopics.map((t, i) => (
+                          <li key={i} className="flex items-center gap-2">
+                            <span className="text-[#1a365d] font-medium">•</span>
+                            {getSubcategoryName(t.category, t.subcategory)}
+                          </li>
+                        ))}
+                      </ul>
+                      <DifficultySelector value={difficulty} onChange={setDifficulty} />
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-medium text-[#1a365d]">
+                        Detected topic — adjust if needed:
+                      </p>
+                      <CategorySelector
+                        category={category}
+                        subcategory={subcategory}
+                        onCategoryChange={handleCategoryChange}
+                        onSubcategoryChange={setSubcategory}
+                      />
+                      <DifficultySelector value={difficulty} onChange={setDifficulty} />
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -258,6 +340,8 @@ export function WorksheetForm() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Generating your worksheet...
               </>
+            ) : multiTopics.length > 1 ? (
+              "Generate Mixed-Topic Worksheet"
             ) : (
               "Generate Worksheet"
             )}

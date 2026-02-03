@@ -1,6 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { SYSTEM_PROMPT, buildUserPrompt } from "./prompts";
+import { SYSTEM_PROMPT, buildUserPrompt, buildMultiTopicUserPrompt } from "./prompts";
 import type { Difficulty, GeneratedWorksheet, Problem, Answer, ProblemModifiers } from "./types";
+
+interface TopicPair {
+  category: string;
+  subcategory: string;
+}
 
 interface GenerateParams {
   category: string;
@@ -8,6 +13,7 @@ interface GenerateParams {
   difficulty: Difficulty;
   questionCount: number;
   modifiers?: ProblemModifiers;
+  topics?: TopicPair[];
 }
 
 function getClient(): Anthropic {
@@ -21,13 +27,20 @@ function getClient(): Anthropic {
 export async function generateProblems(params: GenerateParams): Promise<GeneratedWorksheet> {
   const client = getClient();
 
-  const userPrompt = buildUserPrompt(
-    params.category,
-    params.subcategory,
-    params.difficulty,
-    params.questionCount,
-    params.modifiers
-  );
+  const userPrompt = params.topics && params.topics.length > 1
+    ? buildMultiTopicUserPrompt(
+        params.topics,
+        params.difficulty,
+        params.questionCount,
+        params.modifiers
+      )
+    : buildUserPrompt(
+        params.category,
+        params.subcategory,
+        params.difficulty,
+        params.questionCount,
+        params.modifiers
+      );
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
@@ -49,8 +62,8 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
     problems: parsed.problems,
     answers: parsed.answers,
     metadata: {
-      category: params.category,
-      subcategory: params.subcategory,
+      category: params.topics && params.topics.length > 1 ? "mixed" : params.category,
+      subcategory: params.topics && params.topics.length > 1 ? "mixed" : params.subcategory,
       difficulty: params.difficulty,
       questionCount: params.questionCount,
       generatedAt: new Date().toISOString(),

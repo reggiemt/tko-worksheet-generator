@@ -8,12 +8,18 @@ export const problemModifiersSchema = z.object({
   gridInOnly: z.boolean().default(false),
 }).optional();
 
+export const topicSchema = z.object({
+  category: z.string().min(1),
+  subcategory: z.string().min(1),
+});
+
 export const generateRequestSchema = z.object({
   category: z.string().min(1, "Category is required"),
   subcategory: z.string().min(1, "Subcategory is required"),
   difficulty: z.enum(["easy", "medium", "hard"]),
   questionCount: z.union([z.literal(10), z.literal(15), z.literal(20)]),
   modifiers: problemModifiersSchema,
+  topics: z.array(topicSchema).min(1).max(3).optional(),
 });
 
 export type GenerateRequestInput = z.infer<typeof generateRequestSchema>;

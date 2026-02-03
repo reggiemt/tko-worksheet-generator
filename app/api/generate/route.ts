@@ -33,7 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       );
     }
 
-    const { category, subcategory, difficulty, questionCount, modifiers } = parseResult.data;
+    const { category, subcategory, difficulty, questionCount, modifiers, topics } = parseResult.data;
 
     // 3. Check rate limit based on auth status
     const ip = getClientIp(request);
@@ -84,14 +84,31 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       );
     }
 
-    // 5. Generate problems via Claude
+    // 5. Validate multi-topic is only used by paid users
+    if (topics && topics.length > 1) {
+      if (tier === "free") {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Multi-screenshot worksheets require a paid plan. Upgrade at /pricing.",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 6. Generate problems via Claude
     const activeModifiers = modifiers
       ? Object.entries(modifiers)
           .filter(([, v]) => v)
           .map(([k]) => k)
       : [];
+
+    const effectiveTopics = topics && topics.length > 1 ? topics : undefined;
     console.log(
-      `Generating ${questionCount} ${difficulty} problems for ${category}.${subcategory}${activeModifiers.length ? ` [modifiers: ${activeModifiers.join(", ")}]` : ""}`
+      effectiveTopics
+        ? `Generating ${questionCount} ${difficulty} mixed-topic problems for ${effectiveTopics.map((t) => `${t.category}.${t.subcategory}`).join(", ")}${activeModifiers.length ? ` [modifiers: ${activeModifiers.join(", ")}]` : ""}`
+        : `Generating ${questionCount} ${difficulty} problems for ${category}.${subcategory}${activeModifiers.length ? ` [modifiers: ${activeModifiers.join(", ")}]` : ""}`
     );
     const worksheet = await generateProblems({
       category,
@@ -99,28 +116,29 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       difficulty,
       questionCount,
       modifiers,
+      topics: effectiveTopics,
     });
 
-    // 6. Build LaTeX documents
+    // 7. Build LaTeX documents
     console.log("Building LaTeX documents...");
     const worksheetLatex = buildWorksheetLatex(worksheet);
     const answerKeyLatex = buildAnswerKeyLatex(worksheet);
 
-    // 7. Compile to PDF via LaTeX-on-HTTP
+    // 8. Compile to PDF via LaTeX-on-HTTP
     console.log("Compiling LaTeX to PDF...");
     const [worksheetPdf, answerKeyPdf] = await Promise.all([
       compileLaTeX(worksheetLatex),
       compileLaTeX(answerKeyLatex),
     ]);
 
-    // 8. Increment usage AFTER successful generation
+    // 9. Increment usage AFTER successful generation
     if (userId && tier !== "free") {
       await incrementPaidUsage(userId);
     } else {
       await incrementFreeUsage(ip);
     }
 
-    // 9. Return base64-encoded PDFs
+    // 10. Return base64-encoded PDFs
     console.log("Generation complete!");
     return NextResponse.json({
       success: true,

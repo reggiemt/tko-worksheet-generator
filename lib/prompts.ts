@@ -220,3 +220,103 @@ ${gridInInstruction}
 
 Output valid JSON only. No markdown, no explanations - just the JSON object.`;
 }
+
+export function buildMultiTopicUserPrompt(
+  topics: { category: string; subcategory: string }[],
+  difficulty: Difficulty,
+  questionCount: number,
+  modifiers?: ProblemModifiers
+): string {
+  const topicDescriptions = topics.map((t) => {
+    const info = getSubcategoryById(t.category, t.subcategory);
+    return {
+      name: info?.name ?? t.subcategory,
+      description: info?.description ?? "",
+      category: t.category,
+      subcategory: t.subcategory,
+    };
+  });
+
+  // Deduplicate topics
+  const seen = new Set<string>();
+  const uniqueTopics = topicDescriptions.filter((t) => {
+    const key = `${t.category}.${t.subcategory}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const topicCount = uniqueTopics.length;
+  const perTopic = Math.floor(questionCount / topicCount);
+  const remainder = questionCount - perTopic * topicCount;
+
+  const difficultyGuide = {
+    easy: "Focus on single-concept problems with 1-2 steps. Use straightforward wording and clear setups.",
+    medium: "Include problems that combine 2 concepts or require 2-3 steps. Some problems should require setting up equations from word problems.",
+    hard: "Create challenging problems with multi-step reasoning (3+ steps). Include problems that combine multiple concepts and require strategic thinking.",
+  };
+
+  const topicList = uniqueTopics
+    .map(
+      (t, i) =>
+        `${i + 1}. **${t.name}** (${t.category}/${t.subcategory})${t.description ? `: ${t.description}` : ""} — generate ${perTopic + (i < remainder ? 1 : 0)} problems`
+    )
+    .join("\n");
+
+  // Build modifier instructions (same as single-topic)
+  const modifierInstructions: string[] = [];
+
+  if (modifiers?.includeFractions) {
+    modifierInstructions.push(
+      "**FRACTIONS REQUIRED:** Every problem must meaningfully involve fractions."
+    );
+  }
+  if (modifiers?.includeUnknownConstants) {
+    modifierInstructions.push(
+      "**UNKNOWN CONSTANTS REQUIRED:** Every problem must include at least one unknown constant."
+    );
+  }
+  if (modifiers?.noDesmos) {
+    modifierInstructions.push(
+      "**NO-DESMOS PROBLEMS:** Create problems that CANNOT be efficiently solved by graphing on Desmos."
+    );
+  }
+  if (modifiers?.wordProblemsOnly) {
+    modifierInstructions.push(
+      "**WORD PROBLEMS ONLY:** Every problem must be presented as a real-world context."
+    );
+  }
+  if (modifiers?.gridInOnly) {
+    modifierInstructions.push(
+      "**ALL GRID-IN:** Every problem must be a student-produced response (grid-in)."
+    );
+  }
+
+  const modifierSection =
+    modifierInstructions.length > 0
+      ? `\n\n## Special Constraints\n${modifierInstructions.join("\n\n")}`
+      : "";
+
+  const gridInInstruction = modifiers?.gridInOnly
+    ? `2. ALL problems should be grid-in (student-produced response) — no multiple choice`
+    : `2. Include ${Math.max(1, Math.floor(questionCount / 6))} to ${Math.ceil(questionCount / 5)} grid-in (student-produced response) problems`;
+
+  return `Generate exactly ${questionCount} SAT Math problems spanning MULTIPLE topics. This is a mixed-topic worksheet.
+
+## Topics to cover (distribute problems as indicated):
+${topicList}
+
+Difficulty level: ${difficulty.toUpperCase()}
+${difficultyGuide[difficulty]}${modifierSection}
+
+Requirements:
+1. Create exactly ${questionCount} problems numbered 1 through ${questionCount}
+${gridInInstruction}
+3. Mix the topics throughout the worksheet — do NOT group all problems from the same topic together. Interleave them.
+4. Include visual elements (TikZ graphics) for approximately ${Math.round(questionCount * 0.3)} problems where appropriate
+5. Use the reverse construction method - start with clean answers
+6. Verify each answer mathematically before including
+7. Make distractors plausible but definitively wrong
+
+Output valid JSON only. No markdown, no explanations - just the JSON object.`;
+}
