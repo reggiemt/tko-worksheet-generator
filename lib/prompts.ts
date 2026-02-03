@@ -95,6 +95,16 @@ Use this format for right triangles:
 \\end{tikzpicture}
 \`\`\`
 
+### CRITICAL: Diagram Labeling Rules for Geometry/Trig
+When generating diagrams with labeled vertices:
+1. **Vertex labels MUST match the problem text exactly.** If the problem says "triangle ABC with angle C = 90°", then C must be at the right angle vertex in the diagram.
+2. **Side labels MUST connect the correct vertices.** Side AB is the segment from vertex A to vertex B. Never label a side with vertices it doesn't connect.
+3. **The side between vertices X and Y is always called XY (or YX).** For example, the base from A to C is "AC", NOT "AB".
+4. **Double-check every label** by mentally tracing: "Does this label sit on the segment between the two vertices named?" If not, fix it.
+5. **Right angle markers** must be placed at the vertex where the 90° angle is.
+6. **Angle labels** must be placed at the correct vertex (angle A is at vertex A).
+7. **Known side lengths** labeled in the diagram must match the values stated in the problem text.
+
 ## Output Format
 
 You MUST output valid JSON in exactly this format:

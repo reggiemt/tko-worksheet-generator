@@ -108,7 +108,7 @@ export function AccountStatus() {
 
           {/* Actions */}
           <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
-            {usage.tier !== "free" && usage.tier !== "unlimited" && (
+            {usage.tier !== "free" && (
               <button
                 onClick={async () => {
                   try {
