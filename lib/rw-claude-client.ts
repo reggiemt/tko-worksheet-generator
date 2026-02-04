@@ -47,7 +47,10 @@ export async function generateRWProblems(params: GenerateRWParams): Promise<Gene
     model: "claude-sonnet-4-20250514",
     max_tokens: 12000,
     system: RW_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
+    messages: [
+      { role: "user", content: userPrompt },
+      { role: "assistant", content: "{" },  // Force JSON output
+    ],
   });
 
   const content = response.content[0];
@@ -55,7 +58,7 @@ export async function generateRWProblems(params: GenerateRWParams): Promise<Gene
     throw new Error("Unexpected response type from Claude");
   }
 
-  const parsed = parseRWResponse(content.text);
+  const parsed = parseRWResponse("{" + content.text);
 
   return {
     problems: parsed.problems,
@@ -199,7 +202,10 @@ Output ONLY valid JSON (no markdown fences): [{"number": 1, "answer": "B", "brie
     const response = await client.messages.create({
       model: "claude-3-5-haiku-20241022",
       max_tokens: 4000,
-      messages: [{ role: "user", content: verificationPrompt }],
+      messages: [
+        { role: "user", content: verificationPrompt },
+        { role: "assistant", content: "[" },  // Force JSON array output
+      ],
     });
 
     const content = response.content[0];
@@ -208,7 +214,7 @@ Output ONLY valid JSON (no markdown fences): [{"number": 1, "answer": "B", "brie
       return { passed: true, problemResults: [] };
     }
 
-    let jsonText = content.text.trim();
+    let jsonText = ("[" + content.text).trim();
     if (jsonText.startsWith("```json")) jsonText = jsonText.slice(7);
     else if (jsonText.startsWith("```")) jsonText = jsonText.slice(3);
     if (jsonText.endsWith("```")) jsonText = jsonText.slice(0, -3);
@@ -281,7 +287,10 @@ Return ONLY valid JSON (no markdown fences):
     model: "claude-sonnet-4-20250514",
     max_tokens: 6000,
     system: RW_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      { role: "user", content: prompt },
+      { role: "assistant", content: "{" },  // Force JSON output
+    ],
   });
 
   const content = response.content[0];
@@ -289,7 +298,7 @@ Return ONLY valid JSON (no markdown fences):
     throw new Error("Unexpected response type from Claude");
   }
 
-  let jsonText = content.text.trim();
+  let jsonText = ("{" + content.text).trim();
   if (jsonText.startsWith("```json")) jsonText = jsonText.slice(7);
   else if (jsonText.startsWith("```")) jsonText = jsonText.slice(3);
   if (jsonText.endsWith("```")) jsonText = jsonText.slice(0, -3);

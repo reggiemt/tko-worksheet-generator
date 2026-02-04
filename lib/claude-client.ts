@@ -59,7 +59,10 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
     model: "claude-sonnet-4-20250514",
     max_tokens: 8000,
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
+    messages: [
+      { role: "user", content: userPrompt },
+      { role: "assistant", content: "{" },  // Force JSON output — prevents preamble text
+    ],
   });
 
   // Extract text content from response
@@ -68,8 +71,11 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
     throw new Error("Unexpected response type from Claude");
   }
 
+  // Prepend the "{" we used as prefill — Claude continues from there
+  const fullJson = "{" + content.text;
+
   // Parse JSON response
-  const parsed = parseClaudeResponse(content.text);
+  const parsed = parseClaudeResponse(fullJson);
 
   return {
     problems: parsed.problems,
@@ -343,7 +349,10 @@ Output ONLY valid JSON (no markdown fences): [{"number": 1, "answer": "B", "brie
     const response = await client.messages.create({
       model: "claude-3-5-haiku-20241022",
       max_tokens: 4000,
-      messages: [{ role: "user", content: verificationPrompt }],
+      messages: [
+        { role: "user", content: verificationPrompt },
+        { role: "assistant", content: "[" },  // Force JSON array output
+      ],
     });
 
     const content = response.content[0];
@@ -352,7 +361,7 @@ Output ONLY valid JSON (no markdown fences): [{"number": 1, "answer": "B", "brie
       return { passed: true, problemResults: [] }; // fail-open
     }
 
-    let jsonText = content.text.trim();
+    let jsonText = ("[" + content.text).trim();
     // Strip markdown fences just in case
     if (jsonText.startsWith("```json")) jsonText = jsonText.slice(7);
     else if (jsonText.startsWith("```")) jsonText = jsonText.slice(3);
@@ -440,7 +449,10 @@ Return ONLY valid JSON (no markdown fences):
     model: "claude-sonnet-4-20250514",
     max_tokens: 4000,
     system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      { role: "user", content: prompt },
+      { role: "assistant", content: "{" },  // Force JSON output
+    ],
   });
 
   const content = response.content[0];
@@ -448,7 +460,7 @@ Return ONLY valid JSON (no markdown fences):
     throw new Error("Unexpected response type from Claude");
   }
 
-  let jsonText = content.text.trim();
+  let jsonText = ("{" + content.text).trim();
   if (jsonText.startsWith("```json")) jsonText = jsonText.slice(7);
   else if (jsonText.startsWith("```")) jsonText = jsonText.slice(3);
   if (jsonText.endsWith("```")) jsonText = jsonText.slice(0, -3);
