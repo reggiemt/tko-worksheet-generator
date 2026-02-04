@@ -55,15 +55,28 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
         params.modifiers
       );
 
+  // Scale max_tokens based on question count + modifiers to prevent truncation
+  const activeModifierCount = params.modifiers
+    ? Object.values(params.modifiers).filter(Boolean).length
+    : 0;
+  const baseTokens = Math.max(8000, params.questionCount * 800);
+  const maxTokens = Math.min(16000, baseTokens + activeModifierCount * 1000);
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 8000,
+    max_tokens: maxTokens,
     system: SYSTEM_PROMPT,
     messages: [
       { role: "user", content: userPrompt },
       { role: "assistant", content: "{" },  // Force JSON output — prevents preamble text
     ],
   });
+
+  // Check if response was truncated
+  if (response.stop_reason === "max_tokens") {
+    console.error(`Response truncated at ${maxTokens} tokens — output was cut off`);
+    throw new Error("Failed to parse AI response: output truncated (max_tokens reached)");
+  }
 
   // Extract text content from response
   const content = response.content[0];
@@ -73,6 +86,8 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
 
   // Prepend the "{" we used as prefill — Claude continues from there
   const fullJson = "{" + content.text;
+
+  console.log(`Generation response: stop_reason=${response.stop_reason}, length=${fullJson.length} chars`);
 
   // Parse JSON response
   const parsed = parseClaudeResponse(fullJson);

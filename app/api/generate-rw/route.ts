@@ -104,23 +104,9 @@ export async function POST(request: NextRequest) {
           );
 
           let worksheet;
-          try {
-            worksheet = await generateRWProblems({
-              category,
-              subcategory,
-              difficulty,
-              questionCount,
-              modifiers,
-            });
-          } catch (genError) {
-            if (genError instanceof Error && genError.message.includes("parse")) {
-              console.log("First R/W generation attempt failed to parse, retrying...");
-              send({
-                type: "progress",
-                step: "retrying",
-                message: "AI response had formatting issues — retrying...",
-                percent: 20,
-              });
+          const maxRetries = 2;
+          for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+            try {
               worksheet = await generateRWProblems({
                 category,
                 subcategory,
@@ -128,8 +114,19 @@ export async function POST(request: NextRequest) {
                 questionCount,
                 modifiers,
               });
-            } else {
-              throw genError;
+              break; // Success — exit retry loop
+            } catch (genError) {
+              if (genError instanceof Error && genError.message.includes("parse") && attempt <= maxRetries) {
+                console.log(`R/W generation attempt ${attempt} failed to parse: ${genError.message}. Retrying...`);
+                send({
+                  type: "progress",
+                  step: "retrying",
+                  message: `AI response had formatting issues — retrying (attempt ${attempt + 1})...`,
+                  percent: 15 + attempt * 5,
+                });
+              } else {
+                throw genError;
+              }
             }
           }
 

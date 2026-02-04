@@ -43,9 +43,12 @@ export async function generateRWProblems(params: GenerateRWParams): Promise<Gene
     params.modifiers
   );
 
+  // Scale tokens based on question count
+  const maxTokens = Math.min(16000, Math.max(12000, params.questionCount * 1200));
+
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 12000,
+    max_tokens: maxTokens,
     system: RW_SYSTEM_PROMPT,
     messages: [
       { role: "user", content: userPrompt },
@@ -53,12 +56,21 @@ export async function generateRWProblems(params: GenerateRWParams): Promise<Gene
     ],
   });
 
+  // Check for truncation
+  if (response.stop_reason === "max_tokens") {
+    console.error(`R/W response truncated at ${maxTokens} tokens`);
+    throw new Error("Failed to parse AI response: output truncated (max_tokens reached)");
+  }
+
   const content = response.content[0];
   if (content.type !== "text") {
     throw new Error("Unexpected response type from Claude");
   }
 
-  const parsed = parseRWResponse("{" + content.text);
+  const fullJson = "{" + content.text;
+  console.log(`R/W generation response: stop_reason=${response.stop_reason}, length=${fullJson.length} chars`);
+
+  const parsed = parseRWResponse(fullJson);
 
   return {
     problems: parsed.problems,
