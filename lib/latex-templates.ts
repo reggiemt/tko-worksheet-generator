@@ -214,11 +214,32 @@ ${footerText}
 }
 
 function buildAnswerLatex(answer: Answer): string {
-  const solutionLines = sanitizeLatexContent(answer.solution).split("\\n").join("\n\n");
-  return `\\textbf{${answer.number}. ${sanitizeLatexContent(answer.correctAnswer)}}
+  // Split solution into steps and format nicely
+  const rawSteps = answer.solution.split(/\\n|\n/).filter((s) => s.trim());
+  const formattedSteps = rawSteps
+    .map((step) => {
+      const sanitized = sanitizeLatexContent(step.trim());
+      // If the step starts with "Step N:" make it bold
+      if (/^Step\s*\d/i.test(sanitized)) {
+        return `\\textbf{${sanitized.replace(/^(Step\s*\d+:?)/i, "$1")}}`;
+      }
+      return sanitized;
+    })
+    .join("\n\n");
 
-${solutionLines}
-`;
+  const answerText = sanitizeLatexContent(answer.correctAnswer);
+
+  return `\\begin{minipage}{\\textwidth}
+\\vspace{0.8em}
+{\\large\\textbf{Problem ${answer.number}}} \\hfill {\\large\\fbox{\\textbf{\\strut\\ ${answerText}\\ }}}
+
+\\vspace{0.4em}
+{\\small\\textit{Solution:}}
+
+\\vspace{0.2em}
+{\\small ${formattedSteps}}
+\\vspace{0.4em}
+\\end{minipage}`;
 }
 
 export function buildAnswerKeyLatex(worksheet: GeneratedWorksheet, customBranding?: CustomBranding): string {
@@ -278,6 +299,9 @@ export function buildAnswerKeyLatex(worksheet: GeneratedWorksheet, customBrandin
 % Math packages
 \\usepackage{amsmath, amssymb}
 ${graphicsPackage}
+% Colors
+\\usepackage{xcolor}
+
 % Formatting
 \\usepackage{enumitem}
 \\usepackage{fancyhdr}
@@ -315,7 +339,7 @@ ${titleBlock}
 \\vspace{1em}
 
 %%% ANSWERS %%%
-${answers.map((a) => buildAnswerLatex(a)).join("\n\\hrule\n\\vspace{0.5em}\n")}
+${answers.map((a) => buildAnswerLatex(a)).join("\n\n{\\color{gray}\\hrule}\n")}
 
 \\vspace{2em}
 \\begin{center}
