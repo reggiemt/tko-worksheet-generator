@@ -51,6 +51,7 @@ export function WorksheetForm() {
   const [progressStep, setProgressStep] = useState<string>("");
   const [progressMessage, setProgressMessage] = useState<string>("");
   const [progressPercent, setProgressPercent] = useState<number>(0);
+  const [generationStartTime, setGenerationStartTime] = useState<number>(0);
 
   // Email unlock state
   const [unlockEmail, setUnlockEmail] = useState("");
@@ -194,6 +195,7 @@ export function WorksheetForm() {
     if (!isFormValid) return;
 
     setIsGenerating(true);
+    setGenerationStartTime(Date.now());
     setError(null);
     setResult(null);
     setProgressStep("");
@@ -655,7 +657,17 @@ export function WorksheetForm() {
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   {progressMessage}
                 </span>
-                <span className="text-muted-foreground tabular-nums">{progressPercent}%</span>
+                <span className="text-muted-foreground tabular-nums flex items-center gap-2">
+                  {progressPercent > 10 && progressPercent < 100 && generationStartTime > 0 && (() => {
+                    const elapsed = (Date.now() - generationStartTime) / 1000;
+                    const rate = progressPercent / elapsed;
+                    const remaining = Math.max(0, Math.ceil((100 - progressPercent) / rate));
+                    if (remaining > 120) return null;
+                    if (remaining <= 5) return <span className="text-xs">almost done</span>;
+                    return <span className="text-xs">~{remaining}s left</span>;
+                  })()}
+                  {progressPercent}%
+                </span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                 <div
