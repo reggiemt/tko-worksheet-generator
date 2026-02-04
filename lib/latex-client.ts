@@ -77,17 +77,32 @@ function sanitizeForRetry(latex: string): string {
   // More aggressive sanitization for retry attempts
   let cleaned = stripTikz(latex);
 
-  // Remove any bare backslashes that aren't commands
-  // Fix common AI-generated LaTeX errors
   cleaned = cleaned
     // Fix double-escaped backslashes
     .replace(/\\\\\\\\/g, "\\\\")
-    // Remove undefined commands that might sneak in
-    .replace(/\\text\{([^}]*)\}/g, (_, content) => content)
     // Fix common fraction issues
     .replace(/\\frac\s+/g, "\\frac")
     // Remove any \n literals that should be newlines
-    .replace(/(?<!\\)\\n/g, "\n");
+    .replace(/(?<!\\)\\n/g, "\n")
+    // Escape unescaped special chars in text contexts (%, &, #, $, _)
+    .replace(/(?<!\\)%/g, "\\%")
+    .replace(/(?<!\\)&(?!\\)/g, "\\&")
+    .replace(/(?<!\\)#(?!\d)/g, "\\#")
+    // Fix unmatched braces — remove orphan opening/closing
+    // Remove \textbf, \textit etc. if they have unmatched braces
+    .replace(/\\text(?:bf|it|rm|sf|tt)\{([^}]*$)/gm, "$1")
+    // Remove problematic Unicode characters that pdflatex can't handle
+    .replace(/[^\x00-\x7F]/g, (char) => {
+      const replacements: Record<string, string> = {
+        "≥": "$\\geq$", "≤": "$\\leq$", "≠": "$\\neq$",
+        "±": "$\\pm$", "×": "$\\times$", "÷": "$\\div$",
+        "°": "$^\\circ$", "√": "$\\sqrt{}$", "π": "$\\pi$",
+        "∞": "$\\infty$", "→": "$\\to$", "←": "$\\leftarrow$",
+        "′": "'", "″": "''", "−": "-", "–": "--", "—": "---",
+        "\u2018": "'", "\u2019": "'", "\u201C": "``", "\u201D": "''",
+      };
+      return replacements[char] || "";
+    });
 
   return cleaned;
 }
@@ -127,8 +142,26 @@ export async function compileLaTeX(
   }
   console.warn("LaTeX compile attempt 3 failed:", result3.error);
 
+  // Attempt 4: Nuclear option — strip all visual code AND aggressive sanitize
+  console.log("LaTeX compile: attempt 4 (nuclear sanitization)");
+  let nuclearLatex = sanitizeForRetry(latexContent);
+  // Remove ALL graphicx/figure related content
+  nuclearLatex = nuclearLatex
+    .replace(/\\includegraphics(\[.*?\])?\{.*?\}/g, "")
+    .replace(/\\begin\{figure\}[\s\S]*?\\end\{figure\}/g, "")
+    .replace(/\\begin\{wrapfigure\}[\s\S]*?\\end\{wrapfigure\}/g, "")
+    // Remove any remaining problematic environments
+    .replace(/\\begin\{pgfpicture\}[\s\S]*?\\end\{pgfpicture\}/g, "")
+    .replace(/\\begin\{axis\}[\s\S]*?\\end\{axis\}/g, "");
+  const result4 = await tryCompile(nuclearLatex, compiler, additionalResources);
+  if (result4.ok && result4.buffer) {
+    console.log("LaTeX compile: succeeded after nuclear sanitization");
+    return result4.buffer;
+  }
+  console.warn("LaTeX compile attempt 4 failed:", result4.error);
+
   // All attempts failed
   throw new Error(
-    `LaTeX compilation failed after 3 attempts. Last error: ${result3.error}`
+    `LaTeX compilation failed after 4 attempts. Last error: ${result4.error}`
   );
 }
