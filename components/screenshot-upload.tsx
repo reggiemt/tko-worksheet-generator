@@ -23,20 +23,21 @@ interface ScreenshotEntry {
 interface ScreenshotUploadProps {
   onAnalysisComplete: (result: AnalysisResult) => void;
   onMultiAnalysisComplete?: (results: AnalysisResult[]) => void;
-  multiEnabled?: boolean;
+  maxScreenshots?: number;
 }
 
 export function ScreenshotUpload({
   onAnalysisComplete,
   onMultiAnalysisComplete,
-  multiEnabled = false,
+  maxScreenshots = 1,
 }: ScreenshotUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [entries, setEntries] = useState<ScreenshotEntry[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  const MAX_SCREENSHOTS = multiEnabled ? 3 : 1;
+  const MAX_SCREENSHOTS = maxScreenshots || 1;
+  const multiEnabled = MAX_SCREENSHOTS > 1;
 
   const analyzeImage = useCallback(
     async (dataUrl: string, entryId: string) => {
@@ -276,7 +277,7 @@ export function ScreenshotUpload({
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 or click to upload • JPG, PNG, WebP up to 10MB
-                {multiEnabled && " • Up to 3 screenshots"}
+                {multiEnabled && ` • Up to ${MAX_SCREENSHOTS} screenshots`}
               </p>
             </div>
             <Button
@@ -391,7 +392,7 @@ export function ScreenshotUpload({
         {multiEnabled && (
           <>
             <br />
-            💡 Upload up to 3 screenshots to generate a mixed-topic worksheet
+            💡 Upload up to {MAX_SCREENSHOTS} screenshots to generate a mixed-topic worksheet
           </>
         )}
       </p>
