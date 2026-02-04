@@ -148,7 +148,7 @@ You MUST output valid JSON in exactly this format:
   "problems": [
     {
       "number": 1,
-      "content": "The problem text in plain text (no LaTeX except for math expressions like $x^2$)",
+      "content": "In the figure below, lines p and q are parallel and are cut by a transversal...",
       "choices": {
         "A": "Answer choice A (use LaTeX for math like $\\\\frac{1}{2}$)",
         "B": "Answer choice B",
@@ -156,16 +156,16 @@ You MUST output valid JSON in exactly this format:
         "D": "Answer choice D"
       },
       "isGridIn": false,
-      "hasVisual": false,
-      "visualCode": null
+      "hasVisual": true,
+      "visualCode": "{\\"template\\":\\"parallel_lines_transversal\\",\\"params\\":{\\"lineLabels\\":[\\"p\\",\\"q\\"],\\"angleLabels\\":[{\\"position\\":\\"upper-left-1\\",\\"label\\":\\"x°\\"},{\\"position\\":\\"lower-right-2\\",\\"label\\":\\"y°\\"}]}}"
     },
     {
       "number": 2,
       "content": "A grid-in problem (student-produced response)",
       "choices": null,
       "isGridIn": true,
-      "hasVisual": true,
-      "visualCode": "\\\\begin{tikzpicture}...\\\\end{tikzpicture}"
+      "hasVisual": false,
+      "visualCode": null
     }
   ],
   "answers": [
@@ -188,7 +188,9 @@ CRITICAL RULES:
 3. Use \\n for line breaks in solution text
 4. For grid-in problems, choices should be null and isGridIn should be true
 5. Include 1-2 grid-in problems per worksheet
-6. visualCode should be null (not an empty string) when hasVisual is false`;
+6. visualCode should be null (not an empty string) when hasVisual is false
+7. You MUST include visuals (hasVisual=true with template JSON in visualCode) for ~30% of problems. For geometry topics, at LEAST 40% of problems should have visuals. Use the template system — never raw TikZ.
+8. visualCode must be a JSON STRING containing a template object like: {"template":"right_triangle","params":{...}}. It is a string field, so escape it properly.`;
 
 export function buildUserPrompt(
   category: string,
