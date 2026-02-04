@@ -59,9 +59,25 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
   const activeModifierCount = params.modifiers
     ? Object.values(params.modifiers).filter(Boolean).length
     : 0;
+  const activeModifiers = params.modifiers
+    ? Object.entries(params.modifiers).filter(([, v]) => v).map(([k]) => k)
+    : [];
   const baseTokens = Math.max(8000, params.questionCount * 800);
   const maxTokens = Math.min(16000, baseTokens + activeModifierCount * 1000);
+  const isMultiTopic = params.topics && params.topics.length > 1;
 
+  const requestMeta = {
+    category: isMultiTopic ? "mixed" : params.category,
+    subcategory: isMultiTopic ? params.topics!.map(t => `${t.category}.${t.subcategory}`).join(", ") : params.subcategory,
+    difficulty: params.difficulty,
+    questionCount: params.questionCount,
+    modifiers: activeModifiers,
+    maxTokens,
+    isMultiTopic,
+  };
+  console.log(`[GENERATE] Request: ${JSON.stringify(requestMeta)}`);
+
+  const startTime = Date.now();
   const response = await client.messages.create({
     model: "claude-sonnet-4-20250514",
     max_tokens: maxTokens,
@@ -71,10 +87,14 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
       { role: "assistant", content: "{" },  // Force JSON output — prevents preamble text
     ],
   });
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+  const inputTokens = response.usage?.input_tokens ?? 0;
+  const outputTokens = response.usage?.output_tokens ?? 0;
 
   // Check if response was truncated
   if (response.stop_reason === "max_tokens") {
-    console.error(`Response truncated at ${maxTokens} tokens — output was cut off`);
+    console.error(`[GENERATE] TRUNCATED after ${elapsed}s | tokens: ${inputTokens}in/${outputTokens}out (max: ${maxTokens}) | ${JSON.stringify(requestMeta)}`);
     throw new Error("Failed to parse AI response: output truncated (max_tokens reached)");
   }
 
@@ -87,7 +107,7 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
   // Prepend the "{" we used as prefill — Claude continues from there
   const fullJson = "{" + content.text;
 
-  console.log(`Generation response: stop_reason=${response.stop_reason}, length=${fullJson.length} chars`);
+  console.log(`[GENERATE] OK in ${elapsed}s | stop=${response.stop_reason} | tokens: ${inputTokens}in/${outputTokens}out | chars: ${fullJson.length} | ${params.questionCount}q ${params.difficulty} ${activeModifiers.length}mod`);
 
   // Parse JSON response
   const parsed = parseClaudeResponse(fullJson);

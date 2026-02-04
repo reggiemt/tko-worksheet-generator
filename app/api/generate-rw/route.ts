@@ -105,7 +105,9 @@ export async function POST(request: NextRequest) {
 
           let worksheet: Awaited<ReturnType<typeof generateRWProblems>> | undefined;
           const maxRetries = 2;
+          const genStartTime = Date.now();
           for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+            const attemptStart = Date.now();
             try {
               worksheet = await generateRWProblems({
                 category,
@@ -114,10 +116,13 @@ export async function POST(request: NextRequest) {
                 questionCount,
                 modifiers,
               });
+              const attemptMs = Date.now() - attemptStart;
+              console.log(`[RW-ROUTE] Generation succeeded on attempt ${attempt}/${maxRetries + 1} in ${(attemptMs / 1000).toFixed(1)}s | total: ${((Date.now() - genStartTime) / 1000).toFixed(1)}s`);
               break; // Success — exit retry loop
             } catch (genError) {
+              const attemptMs = Date.now() - attemptStart;
               if (genError instanceof Error && genError.message.includes("parse") && attempt <= maxRetries) {
-                console.log(`R/W generation attempt ${attempt} failed to parse: ${genError.message}. Retrying...`);
+                console.log(`[RW-ROUTE] Generation attempt ${attempt} failed in ${(attemptMs / 1000).toFixed(1)}s: ${genError.message}. Retrying...`);
                 send({
                   type: "progress",
                   step: "retrying",
@@ -125,6 +130,7 @@ export async function POST(request: NextRequest) {
                   percent: 15 + attempt * 5,
                 });
               } else {
+                console.error(`[RW-ROUTE] Generation failed permanently on attempt ${attempt} in ${(attemptMs / 1000).toFixed(1)}s: ${genError instanceof Error ? genError.message : genError}`);
                 throw genError;
               }
             }
