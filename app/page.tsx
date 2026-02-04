@@ -329,10 +329,16 @@ export default function Home() {
                 <p className="text-sm text-white/60">SAT &amp; ACT Test Preparation</p>
               </div>
             </div>
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-6 text-sm flex-wrap">
               <Link href="/pricing" className="hover:text-white transition-colors">
                 Pricing
               </Link>
+              <a
+                href="mailto:info@tkoprep.com"
+                className="hover:text-white transition-colors"
+              >
+                info@tkoprep.com
+              </a>
               <a
                 href="https://tkoprep.com"
                 target="_blank"
@@ -357,6 +363,8 @@ export default function Home() {
             <Link href="/privacy" className="hover:text-white/80">Privacy Policy</Link>
             <span className="mx-2">|</span>
             <Link href="/terms" className="hover:text-white/80">Terms of Service</Link>
+            <span className="mx-2">|</span>
+            <Link href="/refund" className="hover:text-white/80">Refund Policy</Link>
           </div>
         </div>
       </footer>
