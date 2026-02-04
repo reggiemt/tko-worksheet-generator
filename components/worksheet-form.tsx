@@ -133,10 +133,21 @@ export function WorksheetForm() {
         return;
       }
 
-      // Success — update result with the answer key PDF
-      setResult((prev) =>
-        prev ? { ...prev, answerKeyPdf: data.answerKeyPdf } : prev
-      );
+      // If email was sent, just show success message
+      if (data.delivered === "email") {
+        setUnlockSuccess(true);
+        return;
+      }
+
+      // Graceful degradation: if email failed, backend returned PDF directly
+      if (data.delivered === "direct" && data.answerKeyPdf) {
+        setResult((prev) =>
+          prev ? { ...prev, answerKeyPdf: data.answerKeyPdf } : prev
+        );
+        setUnlockSuccess(true);
+        return;
+      }
+
       setUnlockSuccess(true);
     } catch {
       setUnlockError("Network error. Please check your connection and try again.");
@@ -370,10 +381,17 @@ export function WorksheetForm() {
               </div>
 
               {/* Email unlock for free users */}
-              {unlockSuccess && (
-                <div className="flex items-start gap-2 p-3 rounded-md bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                  <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                  <p className="text-sm">Answer key unlocked! Check your email for SAT tips.</p>
+              {unlockSuccess && !result.answerKeyPdf && (
+                <div className="space-y-2 p-3 rounded-md bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium">
+                      Answer key sent to {unlockEmail}! Check your inbox.
+                    </p>
+                  </div>
+                  <p className="text-xs text-green-700 dark:text-green-300 ml-6">
+                    Didn&apos;t receive it? Check your spam folder.
+                  </p>
                 </div>
               )}
 
@@ -403,7 +421,7 @@ export function WorksheetForm() {
                         </h4>
                       </div>
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        Enter your email to get this answer key free (1/month)
+                        Enter your email and we&apos;ll send the answer key (1 free/month)
                       </p>
                       <div className="flex gap-2">
                         <input
@@ -433,12 +451,12 @@ export function WorksheetForm() {
                           {isUnlocking ? (
                             <>
                               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Unlocking...
+                              Sending...
                             </>
                           ) : (
                             <>
-                              <Lock className="h-3.5 w-3.5" />
-                              Unlock
+                              <Mail className="h-3.5 w-3.5" />
+                              Send to Email
                             </>
                           )}
                         </Button>
