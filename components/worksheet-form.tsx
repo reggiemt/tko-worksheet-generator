@@ -7,13 +7,11 @@ import { QuestionCountSelector } from "./question-count-selector";
 import { ScreenshotUpload, type AnalysisResult } from "./screenshot-upload";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
-import { Loader2, Download, AlertCircle, Camera, BookOpen } from "lucide-react";
+import { Loader2, Download, AlertCircle, Camera, BookOpen, Lock } from "lucide-react";
 import type { Difficulty, QuestionCount, GenerateResponse, ProblemModifiers } from "@/lib/types";
 import { DEFAULT_MODIFIERS } from "@/lib/types";
 import { getSubcategoryName } from "@/lib/categories";
 import { ProblemModifiersSelector } from "./problem-modifiers";
-import { UsageBanner } from "./usage-banner";
-import { AccountStatus } from "./account-status";
 
 type TabMode = "screenshot" | "manual";
 
@@ -46,7 +44,7 @@ export function WorksheetForm() {
   const [multiEnabled, setMultiEnabled] = useState(false);
   const [userTier, setUserTier] = useState<string>("free");
 
-  // Fetch user tier to determine multi-screenshot eligibility
+  // Fetch user tier to determine multi-screenshot eligibility & track limits
   useEffect(() => {
     fetch("/api/usage")
       .then((r) => r.json())
@@ -55,9 +53,12 @@ export function WorksheetForm() {
         setUserTier(tier);
         const paidTiers = ["starter", "pro", "enterprise", "unlimited"];
         setMultiEnabled(data.authenticated && paidTiers.includes(tier));
+        if (data.remaining <= 0) {
+          setLimitReached(true);
+        }
       })
       .catch(() => {});
-  }, []);
+  }, [usageRefreshKey]);
 
   const isFormValid = category && subcategory;
 
@@ -174,18 +175,6 @@ export function WorksheetForm() {
   return (
     <Card className="w-full max-w-2xl mx-auto border-[#1a365d]/20 shadow-lg">
       <CardContent className="pt-6">
-        {/* Account Status (logged in users) */}
-        <AccountStatus />
-
-        {/* Usage Banner */}
-        <div className="mb-4">
-          <UsageBanner
-            refreshKey={usageRefreshKey}
-            onLimitReached={() => setLimitReached(true)}
-            hideWhenAuthenticated
-          />
-        </div>
-
         {/* Tab Switcher */}
         <div className="flex rounded-lg bg-muted p-1 mb-6">
           <button
@@ -284,7 +273,11 @@ export function WorksheetForm() {
 
           {/* Problem Modifiers */}
           {(tab === "manual" || screenshotDetected) && (
-            <ProblemModifiersSelector value={modifiers} onChange={setModifiers} />
+            <ProblemModifiersSelector
+              value={modifiers}
+              onChange={setModifiers}
+              disabled={userTier === "free"}
+            />
           )}
 
           {/* Error Display */}
@@ -312,16 +305,26 @@ export function WorksheetForm() {
                   <Download className="h-4 w-4" />
                   Download Worksheet
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadAnswerKey}
-                  className="gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Download Answer Key
-                </Button>
+                {result?.answerKeyPdf ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadAnswerKey}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download Answer Key
+                  </Button>
+                ) : (
+                  <a
+                    href="/pricing"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-amber-200 bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100 transition-colors"
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    Answer keys on paid plans
+                  </a>
+                )}
               </div>
             </div>
           )}

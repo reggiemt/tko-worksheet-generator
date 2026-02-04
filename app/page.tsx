@@ -3,6 +3,7 @@ import { Camera, Sparkles, Download, Star, Check, Zap, Target, Brain } from "luc
 import Image from "next/image";
 import Link from "next/link";
 import { AuthButton } from "@/components/auth-button";
+import { NavUsage } from "@/components/nav-usage";
 import { SubscribeButton } from "@/components/subscribe-button";
 
 export default function Home() {
@@ -29,6 +30,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            <NavUsage />
             <AuthButton />
             <Link
               href="/pricing"
