@@ -129,8 +129,9 @@ function sanitizeForRetry(latex: string): string {
     .replace(/\\\\\\\\/g, "\\\\")
     // Fix common fraction issues
     .replace(/\\frac\s+/g, "\\frac")
-    // Remove any \n literals that should be newlines
-    .replace(/(?<!\\)\\n/g, "\n")
+    // Remove any literal \n that should be newlines (but NOT \node, \newcommand, etc.)
+    // Only match \n followed by whitespace, end-of-string, or another backslash
+    .replace(/\\n(?=\s|$|\\)/g, "\n")
     // Escape unescaped & and # in body text (but NOT % — those are comments!)
     .replace(/(?<!\\)&(?!\\)/g, "\\&")
     .replace(/(?<!\\)#(?!\d)/g, "\\#")
@@ -187,7 +188,7 @@ export async function compileLaTeX(
       await new Promise((r) => setTimeout(r, 1000 * i));
     }
     
-    console.log(`LaTeX compile: attempt ${i + 1} (${name})`);
+    console.log(`[LATEX-COMPILE] attempt ${i + 1}/${attempts.length} (${name})`);
     const transformed = transform(latexContent);
     const result = await tryCompile(transformed, compiler, additionalResources);
     
@@ -199,12 +200,12 @@ export async function compileLaTeX(
     });
 
     if (result.ok && result.buffer) {
-      if (i > 0) console.log(`LaTeX compile: succeeded on attempt ${i + 1} (${name})`);
+      console.log(`[LATEX-COMPILE] ✓ succeeded on attempt ${i + 1} (${name}) | PDF size: ${result.buffer.length} bytes`);
       // Log to Redis for analysis (fire and forget)
       logCompileResult(logs).catch(() => {});
       return result.buffer;
     }
-    console.warn(`LaTeX compile attempt ${i + 1} failed:`, result.error);
+    console.warn(`[LATEX-COMPILE] ✗ attempt ${i + 1} (${name}) failed:`, result.error?.substring(0, 300));
   }
 
   // All attempts failed — log for analysis
