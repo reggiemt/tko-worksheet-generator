@@ -137,7 +137,10 @@ export default function TermsPage() {
                 <ul className="text-sm text-slate-600 space-y-1">
                   <li>• 500 worksheets per month</li>
                   <li>• Everything in Pro</li>
-                  <li>• For tutoring companies &amp; schools</li>
+                  <li>• Custom logo on worksheets</li>
+                  <li>• Usage analytics dashboard</li>
+                  <li>• Priority support &amp; invoice billing</li>
+                  <li>• Multi-user team access</li>
                 </ul>
               </div>
             </div>

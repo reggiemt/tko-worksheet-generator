@@ -276,7 +276,7 @@ export default function Home() {
                 </p>
                 <p className="text-[#e53e3e] text-sm font-medium mb-5">500 worksheets/month</p>
                 <ul className="space-y-2 mb-6">
-                  {["500 worksheets per month", "Everything in Pro, plus:", "Ideal for tutoring companies", "School & classroom use"].map((f) => (
+                  {["500 worksheets per month", "Everything in Pro, plus:", "Custom logo on worksheets", "Usage analytics dashboard", "Priority support & invoice billing"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="h-4 w-4 text-green-400 shrink-0" />
                       {f}
