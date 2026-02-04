@@ -171,21 +171,12 @@ export async function compileLaTeX(
   const attempts: { name: string; transform: (latex: string) => string }[] = [
     { name: "full document", transform: (l) => l },
     { name: "full document (retry)", transform: (l) => l }, // Retry same content for transient 500s
-    { name: "stripped TikZ", transform: stripTikz },
-    { name: "aggressive sanitization", transform: sanitizeForRetry },
-    {
-      name: "nuclear sanitization",
-      transform: (l) => {
-        let cleaned = sanitizeForRetry(l);
-        cleaned = cleaned
-          .replace(/\\includegraphics(\[.*?\])?\{.*?\}/g, "")
-          .replace(/\\begin\{figure\}[\s\S]*?\\end\{figure\}/g, "")
-          .replace(/\\begin\{wrapfigure\}[\s\S]*?\\end\{wrapfigure\}/g, "")
-          .replace(/\\begin\{pgfpicture\}[\s\S]*?\\end\{pgfpicture\}/g, "")
-          .replace(/\\begin\{axis\}[\s\S]*?\\end\{axis\}/g, "");
-        return cleaned;
-      },
-    },
+    { name: "sanitized (keep TikZ)", transform: sanitizeForRetry }, // Fix escaping issues but KEEP figures
+    // NOTE: TikZ-stripping fallbacks removed — we want to see real errors
+    // instead of silently losing all figures. Re-enable once TikZ compilation is stable.
+    // { name: "stripped TikZ", transform: stripTikz },
+    // { name: "aggressive sanitization", transform: sanitizeForRetry },
+    // { name: "nuclear sanitization", ... },
   ];
 
   for (let i = 0; i < attempts.length; i++) {
