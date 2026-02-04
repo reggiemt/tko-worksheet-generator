@@ -940,13 +940,28 @@ export function renderTemplate(
 // ---------------------------------------------------------------------------
 
 export function resolveVisualCode(visualCode: string): string {
+  // Try to parse as template JSON first
   try {
     const parsed = JSON.parse(visualCode);
     if (parsed && typeof parsed === "object" && parsed.template) {
-      return renderTemplate(parsed.template, parsed.params || {});
+      const result = renderTemplate(parsed.template, parsed.params || {});
+      return result;
     }
   } catch {
-    // Not JSON — treat as raw TikZ (backward compatibility)
+    // Not JSON — might be raw TikZ
   }
-  return visualCode;
+
+  // If it looks like raw TikZ, try to use it but with safety wrapping
+  if (visualCode.includes("\\begin{tikzpicture}") || visualCode.includes("\\draw") || visualCode.includes("\\node")) {
+    console.warn("Visual code is raw TikZ (not template JSON) — using with safety wrapping");
+    // Ensure it's wrapped in tikzpicture if not already
+    if (!visualCode.includes("\\begin{tikzpicture}")) {
+      return `\\begin{tikzpicture}\n${visualCode}\n\\end{tikzpicture}`;
+    }
+    return visualCode;
+  }
+
+  // Not TikZ at all — skip it to avoid compilation errors
+  console.warn("Visual code is neither template JSON nor TikZ — omitting:", visualCode.substring(0, 100));
+  return "\\textit{[Figure]}";
 }

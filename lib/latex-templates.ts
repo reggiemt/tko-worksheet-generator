@@ -51,8 +51,15 @@ function buildProblemLatex(problem: Problem): string {
   let latex = `\\problem\n${sanitizeLatexContent(problem.content)}\n`;
 
   if (problem.hasVisual && problem.visualCode) {
-    const tikzCode = resolveVisualCode(problem.visualCode);
-    latex += `\n\\begin{center}\n${tikzCode}\n\\end{center}\n`;
+    try {
+      const tikzCode = resolveVisualCode(problem.visualCode);
+      if (tikzCode && !tikzCode.includes("[Figure]")) {
+        latex += `\n\\begin{center}\n${tikzCode}\n\\end{center}\n`;
+      }
+    } catch (err) {
+      console.warn(`Visual code rendering failed for problem ${problem.number}:`, err);
+      // Skip the figure rather than crash
+    }
   }
 
   if (problem.isGridIn) {

@@ -360,8 +360,12 @@ export async function POST(request: NextRequest) {
             } else if (error.message.includes("LaTeX")) {
               // Include attempt details for debugging
               console.error("LaTeX failure details:", error.message);
+              // Show a more helpful error with attempt info
+              const attemptInfo = error.message.includes("Errors:")
+                ? ` Debug: ${error.message.substring(error.message.indexOf("Errors:"))}`
+                : "";
               errorMessage =
-                "PDF generation failed. The AI-generated content may have formatting issues. Please try again.";
+                `PDF generation failed. The AI-generated content may have formatting issues. Please try again.${attemptInfo}`;
             } else if (error.message.includes("parse") || error.message.includes("JSON")) {
               errorMessage = "Failed to parse AI response. Please try again.";
             }
