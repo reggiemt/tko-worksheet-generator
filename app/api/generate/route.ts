@@ -17,7 +17,7 @@ import { generateRequestSchema } from "@/lib/validators";
 import { getRedisClient } from "@/lib/redis";
 import type { GenerateResponse, GenerateStreamEvent } from "@/lib/types";
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
