@@ -57,43 +57,63 @@ All distractors must be:
 - Abstract or complex contexts
 - Requires strategic problem-solving approach
 
-## Visual Elements (TikZ)
+## Visual Elements (Templates)
 Include visual elements for approximately 30% of problems where appropriate:
 - Coordinate planes for function problems
 - Geometric figures for geometry problems
 - Data tables for statistics problems
 - Graphs for data interpretation
 
-Use this TikZ format for graphs:
-\`\`\`latex
-\\begin{tikzpicture}
-\\begin{axis}[
-    axis lines=middle,
-    xlabel={$x$}, ylabel={$y$},
-    xmin=-5, xmax=5,
-    ymin=-5, ymax=5,
-    xtick={-4,-2,0,2,4},
-    ytick={-4,-2,0,2,4},
-    grid=both,
-    width=7cm, height=7cm
-]
-\\addplot[domain=-4:4, samples=100, thick, blue] {x^2 - 2*x - 3};
-\\end{axis}
-\\end{tikzpicture}
-\`\`\`
+For problems requiring diagrams, use the template system instead of raw TikZ.
+When a problem needs a visual, set hasVisual=true and set visualCode to a JSON string (properly escaped in the JSON output).
 
-Use this format for right triangles:
-\`\`\`latex
-\\begin{tikzpicture}[scale=0.8]
-    \\coordinate (A) at (0,0);
-    \\coordinate (B) at (4,0);
-    \\coordinate (C) at (4,3);
-    \\draw[thick] (A) -- (B) node[midway, below] {4}
-                 -- (C) node[midway, right] {3}
-                 -- cycle node[midway, above left] {5};
-    \\draw (3.7,0) -- (3.7,0.3) -- (4,0.3);
-\\end{tikzpicture}
-\`\`\`
+Available templates:
+
+### 1. parallel_lines_transversal
+Two parallel lines cut by a transversal with labeled angles at each intersection.
+Positions use format "{quadrant}-{intersection}" where quadrant is upper-left, upper-right, lower-left, lower-right and intersection is 1 (lower line) or 2 (upper line).
+Example:
+{"template":"parallel_lines_transversal","params":{"lineLabels":["p","q"],"angleLabels":[{"position":"upper-left-1","label":"x°"},{"position":"lower-right-2","label":"y°"}]}}
+
+### 2. right_triangle
+Right triangle with labeled vertices, sides, and right angle marker.
+Example:
+{"template":"right_triangle","params":{"vertices":["A","B","C"],"rightAngleVertex":"B","sides":[{"from":"A","to":"B","label":"4"},{"from":"B","to":"C","label":"3"},{"from":"A","to":"C","label":"5"}],"angles":[{"vertex":"A","label":"\\\\theta"}]}}
+
+### 3. general_triangle
+Any triangle (not necessarily right) with labeled vertices, sides, and angles.
+Example:
+{"template":"general_triangle","params":{"vertices":["P","Q","R"],"sides":[{"from":"P","to":"Q","label":"a"},{"from":"Q","to":"R","label":"b"},{"from":"P","to":"R","label":"c"}],"angles":[{"vertex":"P","label":"50°"}]}}
+
+### 4. circle_with_angle
+Circle with points on circumference, chords, radii, arc labels, and angle labels.
+Points are placed by angle in degrees (0° = right, 90° = top, etc.).
+Example:
+{"template":"circle_with_angle","params":{"center":"O","points":[{"label":"A","angleDeg":60},{"label":"B","angleDeg":180},{"label":"C","angleDeg":300}],"chords":[["A","B"],["B","C"]],"radius":{"to":"A","label":"r"},"angleLabel":{"vertex":"B","label":"x°"}}}
+
+### 5. coordinate_plane_line
+Coordinate plane with one or more lines and optional labeled points.
+Example:
+{"template":"coordinate_plane_line","params":{"xRange":[-5,5],"yRange":[-5,5],"lines":[{"slope":2,"intercept":-1,"label":"y=2x-1","color":"blue"}],"points":[{"x":1,"y":1,"label":"(1,1)"}],"gridLines":true}}
+
+### 6. coordinate_plane_parabola
+Coordinate plane with a parabola y = ax² + bx + c.
+Example:
+{"template":"coordinate_plane_parabola","params":{"a":1,"b":-2,"c":-3,"xRange":[-3,5],"yRange":[-5,5],"points":[{"x":1,"y":-4,"label":"vertex"}],"label":"f(x)"}}
+
+### 7. supplementary_angles
+Two angles on a straight line (supplementary pair).
+Example:
+{"template":"supplementary_angles","params":{"angleLabels":["x°","(180-x)°"],"rayLabels":["A","B","C"]}}
+
+### 8. rectangle_with_diagonal
+Rectangle with labeled sides and optional diagonal.
+Example:
+{"template":"rectangle_with_diagonal","params":{"width":6,"height":4,"vertices":["A","B","C","D"],"sides":[{"position":"bottom","label":"6"},{"position":"right","label":"4"}],"showDiagonal":true,"diagonalLabel":"d"}}
+
+CRITICAL: Do NOT write raw TikZ code. Use the template system by setting visualCode to a JSON string with "template" and "params" keys. The template system guarantees correct label placement and prevents common TikZ bugs.
+
+If none of the templates fit the problem, you may omit the visual (set hasVisual to false).
 
 ### CRITICAL: Diagram Labeling Rules for Geometry/Trig
 When generating diagrams with labeled vertices:

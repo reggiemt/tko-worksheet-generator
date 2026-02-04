@@ -1,5 +1,6 @@
 import type { GeneratedWorksheet, Problem, Answer } from "./types";
 import { getSubcategoryName } from "./categories";
+import { resolveVisualCode } from "./tikz-templates";
 
 function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
@@ -44,7 +45,8 @@ function buildProblemLatex(problem: Problem): string {
   let latex = `\\problem\n${sanitizeLatexContent(problem.content)}\n`;
 
   if (problem.hasVisual && problem.visualCode) {
-    latex += `\n\\begin{center}\n${problem.visualCode}\n\\end{center}\n`;
+    const tikzCode = resolveVisualCode(problem.visualCode);
+    latex += `\n\\begin{center}\n${tikzCode}\n\\end{center}\n`;
   }
 
   if (problem.isGridIn) {
