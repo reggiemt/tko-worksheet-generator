@@ -7,7 +7,7 @@ import { QuestionCountSelector } from "./question-count-selector";
 import { ScreenshotUpload, type AnalysisResult } from "./screenshot-upload";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
-import { Loader2, Download, AlertCircle, Camera, BookOpen, Lock } from "lucide-react";
+import { Loader2, Download, AlertCircle, Camera, BookOpen, Lock, Mail, CheckCircle } from "lucide-react";
 import type { Difficulty, QuestionCount, GenerateResponse, ProblemModifiers } from "@/lib/types";
 import { DEFAULT_MODIFIERS } from "@/lib/types";
 import { getSubcategoryName } from "@/lib/categories";
@@ -38,6 +38,12 @@ export function WorksheetForm() {
   const [screenshotDetected, setScreenshotDetected] = useState(false);
   const [usageRefreshKey, setUsageRefreshKey] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
+
+  // Email unlock state
+  const [unlockEmail, setUnlockEmail] = useState("");
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  const [unlockSuccess, setUnlockSuccess] = useState(false);
 
   // Multi-screenshot state
   const [multiTopics, setMultiTopics] = useState<{ category: string; subcategory: string }[]>([]);
@@ -98,6 +104,47 @@ export function WorksheetForm() {
     }
   };
 
+  const handleUnlockAnswerKey = async () => {
+    if (!unlockEmail.trim() || !result?.worksheetId) return;
+
+    setIsUnlocking(true);
+    setUnlockError(null);
+
+    try {
+      const response = await fetch("/api/unlock-answer-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: unlockEmail.trim(),
+          worksheetId: result.worksheetId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        if (data.error === "already_used") {
+          setUnlockError("already_used");
+        } else if (data.error === "expired") {
+          setUnlockError("expired");
+        } else {
+          setUnlockError(data.message || data.error || "Something went wrong. Please try again.");
+        }
+        return;
+      }
+
+      // Success — update result with the answer key PDF
+      setResult((prev) =>
+        prev ? { ...prev, answerKeyPdf: data.answerKeyPdf } : prev
+      );
+      setUnlockSuccess(true);
+    } catch {
+      setUnlockError("Network error. Please check your connection and try again.");
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
@@ -105,6 +152,9 @@ export function WorksheetForm() {
     setIsGenerating(true);
     setError(null);
     setResult(null);
+    setUnlockEmail("");
+    setUnlockError(null);
+    setUnlockSuccess(false);
 
     try {
       // Build request body
@@ -316,16 +366,106 @@ export function WorksheetForm() {
                     <Download className="h-4 w-4" />
                     Download Answer Key
                   </Button>
-                ) : (
-                  <a
-                    href="/pricing"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-amber-200 bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100 transition-colors"
-                  >
-                    <Lock className="h-3.5 w-3.5" />
-                    Answer keys on paid plans
-                  </a>
-                )}
+                ) : null}
               </div>
+
+              {/* Email unlock for free users */}
+              {unlockSuccess && (
+                <div className="flex items-start gap-2 p-3 rounded-md bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                  <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <p className="text-sm">Answer key unlocked! Check your email for SAT tips.</p>
+                </div>
+              )}
+
+              {!result.answerKeyPdf && result.worksheetId && !unlockSuccess && (
+                <div className="space-y-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
+                  {unlockError === "already_used" ? (
+                    <div className="text-sm text-blue-800 dark:text-blue-200">
+                      <p className="font-medium">You&apos;ve already used your free answer key this month.</p>
+                      <a
+                        href="/pricing"
+                        className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium underline"
+                      >
+                        Upgrade for unlimited answer keys →
+                      </a>
+                    </div>
+                  ) : unlockError === "expired" ? (
+                    <div className="text-sm text-amber-700 dark:text-amber-300">
+                      <p className="font-medium">This worksheet has expired.</p>
+                      <p>Generate a new worksheet to unlock the answer key.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                        <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                          Unlock Answer Key
+                        </h4>
+                      </div>
+                      <p className="text-sm text-blue-700 dark:text-blue-300">
+                        Enter your email to get this answer key free (1/month)
+                      </p>
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          placeholder="you@example.com"
+                          value={unlockEmail}
+                          onChange={(e) => {
+                            setUnlockEmail(e.target.value);
+                            setUnlockError(null);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleUnlockAnswerKey();
+                            }
+                          }}
+                          disabled={isUnlocking}
+                          className="flex-1 rounded-md border border-blue-200 dark:border-blue-700 bg-white dark:bg-blue-950 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={handleUnlockAnswerKey}
+                          disabled={isUnlocking || !unlockEmail.trim()}
+                          className="bg-blue-600 hover:bg-blue-700 text-white gap-1.5"
+                        >
+                          {isUnlocking ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Unlocking...
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-3.5 w-3.5" />
+                              Unlock
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      {unlockError && unlockError !== "already_used" && unlockError !== "expired" && (
+                        <p className="text-sm text-red-600 dark:text-red-400">{unlockError}</p>
+                      )}
+                      <a
+                        href="/pricing"
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400"
+                      >
+                        Or upgrade for unlimited answer keys →
+                      </a>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {!result.answerKeyPdf && !result.worksheetId && !unlockSuccess && (
+                <a
+                  href="/pricing"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-amber-200 bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100 transition-colors"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  Answer keys on paid plans
+                </a>
+              )}
             </div>
           )}
 

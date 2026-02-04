@@ -12,6 +12,7 @@ import {
 import { getTierForEmail } from "@/lib/subscription";
 import { auth } from "@/auth";
 import { generateRequestSchema } from "@/lib/validators";
+import { getRedisClient } from "@/lib/redis";
 import type { GenerateResponse } from "@/lib/types";
 
 export const maxDuration = 60;
@@ -175,12 +176,27 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       await incrementFreeUsage(ip);
     }
 
-    // 10. Return base64-encoded PDFs
+    // 10. For free tier, store worksheet data in Redis for email-gated unlock
+    let worksheetId: string | undefined;
+    if (isFree) {
+      const redis = getRedisClient();
+      if (redis) {
+        worksheetId = crypto.randomUUID();
+        await redis.set(
+          `worksheet:temp:${worksheetId}`,
+          JSON.stringify(worksheet),
+          { ex: 3600 } // 1 hour TTL
+        );
+      }
+    }
+
+    // 11. Return base64-encoded PDFs
     console.log("Generation complete!");
     return NextResponse.json({
       success: true,
       worksheetPdf: worksheetPdf.toString("base64"),
       ...(answerKeyPdf ? { answerKeyPdf: answerKeyPdf.toString("base64") } : {}),
+      ...(worksheetId ? { worksheetId } : {}),
       metadata: worksheet.metadata,
     });
   } catch (error) {

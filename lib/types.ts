@@ -74,6 +74,7 @@ export interface GenerateResponse {
   success: boolean;
   worksheetPdf?: string;
   answerKeyPdf?: string;
+  worksheetId?: string;
   error?: string;
   metadata?: GeneratedWorksheet["metadata"];
 }
