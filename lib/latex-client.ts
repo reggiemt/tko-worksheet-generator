@@ -109,10 +109,10 @@ function stripTikz(latex: string): string {
 }
 
 function sanitizeForRetry(latex: string): string {
-  // More aggressive sanitization for retry attempts
+  // Sanitize escaping issues but KEEP TikZ figures intact.
   // IMPORTANT: Only sanitize the document BODY, never the preamble.
   // Escaping % in the preamble turns LaTeX comments into visible text.
-  let cleaned = stripTikz(latex);
+  let cleaned = latex; // NOTE: was stripTikz(latex) — removed to preserve figures
 
   // Split at \begin{document} to protect the preamble
   const docStart = cleaned.indexOf("\\begin{document}");
