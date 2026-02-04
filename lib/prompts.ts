@@ -71,75 +71,61 @@ When problem modifiers are active (fractions, unknown constants, no-Desmos, etc.
 - **With 2+ modifiers active:** Generate problems that would normally be ONE difficulty level BELOW, then the modifiers bring them up to target
 - Example: Medium difficulty + fractions + unknown constants → generate what would normally be EASY-to-MEDIUM base problems, and the modifiers will make them medium
 
-## Visual Elements (Templates)
-Include visual elements for approximately 30% of problems where appropriate:
-- Coordinate planes for function problems
-- Geometric figures for geometry problems
-- Data tables for statistics problems
-- Graphs for data interpretation
+## Visual Elements — TikZ/pgfplots Figures
 
-For problems requiring diagrams, use the template system instead of raw TikZ.
-When a problem needs a visual, set hasVisual=true and set visualCode to a JSON string (properly escaped in the JSON output).
+Generate TikZ and pgfplots figures directly as raw LaTeX code. When a problem benefits from a diagram, set hasVisual=true and provide the COMPLETE TikZ code in visualCode (as a JSON string with escaped backslashes).
 
-Available templates:
+The document preamble already includes: amsmath, amssymb, tikz, pgfplots (compat=1.18), and tikzlibraries calc, patterns, angles, quotes, positioning.
 
-### 1. parallel_lines_transversal
-Two parallel lines cut by a transversal with labeled angles at each intersection.
-Positions use format "{quadrant}-{intersection}" where quadrant is upper-left, upper-right, lower-left, lower-right and intersection is 1 (lower line) or 2 (upper line).
-Example:
-{"template":"parallel_lines_transversal","params":{"lineLabels":["p","q"],"angleLabels":[{"position":"upper-left-1","label":"x°"},{"position":"lower-right-2","label":"y°"}]}}
+### General Figure Rules
+1. **Scale for print**: Keep figures between 5–10 cm wide (US Letter with 1" margins).
+2. **Labels must be readable**: Minimum font \\\\small. No overlapping labels.
+3. **Consistent style**: thick for primary lines, dashed for construction/hidden lines.
+4. **Colors**: blue for primary, red for secondary, black for labels. Avoid yellow/cyan/lime.
+5. **Right angle markers**: Always draw the small square: \\\\draw (x-0.3,y) -- (x-0.3,y+0.3) -- (x,y+0.3);
+6. **Point markers**: \\\\fill (point) circle (2pt); for solid, \\\\fill[white, draw=black, thick] (point) circle (3pt); for open circles.
 
-### 2. right_triangle
-Right triangle with labeled vertices, sides, and right angle marker.
-Example:
-{"template":"right_triangle","params":{"vertices":["A","B","C"],"rightAngleVertex":"B","sides":[{"from":"A","to":"B","label":"4"},{"from":"B","to":"C","label":"3"},{"from":"A","to":"C","label":"5"}],"angles":[{"vertex":"A","label":"\\\\theta"}]}}
+### Coordinate Planes (pgfplots)
+- Always set axis lines=middle, grid=both, grid style={gray!30}
+- samples=100 for curves, samples=2 for lines
+- Domain slightly inside axis range to avoid clipping
+- Mark key points (intercepts, vertex) with filled circles
 
-### 3. general_triangle
-Any triangle (not necessarily right) with labeled vertices, sides, and angles.
-Example:
-{"template":"general_triangle","params":{"vertices":["P","Q","R"],"sides":[{"from":"P","to":"Q","label":"a"},{"from":"Q","to":"R","label":"b"},{"from":"P","to":"R","label":"c"}],"angles":[{"vertex":"P","label":"50°"}]}}
+### Triangles
+- Always include right angle marker on right triangles
+- Use scale=0.5 to 0.9, label vertices with uppercase letters
+- Side labels at midpoints using $(A)!0.5!(B)$ calc syntax
 
-### 4. circle_with_angle
-Circle with points on circumference, chords, radii, arc labels, and angle labels.
-Points are placed by angle in degrees (0° = right, 90° = top, etc.).
-Example:
-{"template":"circle_with_angle","params":{"center":"O","points":[{"label":"A","angleDeg":60},{"label":"B","angleDeg":180},{"label":"C","angleDeg":300}],"chords":[["A","B"],["B","C"]],"radius":{"to":"A","label":"r"},"angleLabel":{"vertex":"B","label":"x°"}}}
+### Parallel Lines and Transversals
+- Label parallel lines with lowercase letters
+- Transversal extends beyond both lines
+- Angle arcs at intersections with correct angular positions
 
-### 5. coordinate_plane_line
-Coordinate plane with one or more lines and optional labeled points.
-Example:
-{"template":"coordinate_plane_line","params":{"xRange":[-5,5],"yRange":[-5,5],"lines":[{"slope":2,"intercept":-1,"label":"y=2x-1","color":"blue"}],"points":[{"x":1,"y":1,"label":"(1,1)"}],"gridLines":true}}
+### Circles
+- Use angular positions measured counterclockwise from positive x-axis
+- Mark central/inscribed angles with small arcs near vertex
+- Highlight arcs with very thick style
 
-### 6. coordinate_plane_parabola
-Coordinate plane with a parabola y = ax² + bx + c.
-Example:
-{"template":"coordinate_plane_parabola","params":{"a":1,"b":-2,"c":-3,"xRange":[-3,5],"yRange":[-5,5],"points":[{"x":1,"y":-4,"label":"vertex"}],"label":"f(x)"}}
+### ARC AND ANGLE RULES (CRITICAL)
+Every arc's start angle and end angle must correspond to ACTUAL angular positions of the rays — NEVER default to 0°.
 
-### 7. supplementary_angles
-Two angles on a straight line (supplementary pair).
-Example:
-{"template":"supplementary_angles","params":{"angleLabels":["x°","(180-x)°"],"rayLabels":["A","B","C"]}}
+1. **Angle markers**: start angle = angular position of one ray, end angle = angular position of the other ray. Verify |end - start| = intended angle measure.
+2. **Highlighted arcs**: For counterclockwise, ensure end > start. For clockwise, ensure end < start. Add 360° if needed.
+3. **Coordinate must match start angle**: The +(angle:radius) MUST use the same angle as start angle.
+4. **Verify every arc**: Check sweep direction, sweep magnitude = intended measure, coordinate matches start angle.
 
-### 8. rectangle_with_diagonal
-Rectangle with labeled sides and optional diagonal.
-Example:
-{"template":"rectangle_with_diagonal","params":{"width":6,"height":4,"vertices":["A","B","C","D"],"sides":[{"position":"bottom","label":"6"},{"position":"right","label":"4"}],"showDiagonal":true,"diagonalLabel":"d"}}
+WRONG: \\\\draw (O) +(0:0.5) arc[start angle=0, end angle=110, radius=0.5]; (starts at x-axis instead of actual ray)
+RIGHT: \\\\draw (O) +(200:0.5) arc[start angle=200, end angle=310, radius=0.5]; (uses actual ray positions)
 
-CRITICAL: Do NOT write raw TikZ code. Use the template system by setting visualCode to a JSON string with "template" and "params" keys. The template system guarantees correct label placement and prevents common TikZ bugs.
+### 3D Solids (Cones, Cylinders, Prisms)
+- Base ellipses: y_radius ≈ 0.25 × x_radius for perspective
+- Hidden edges dashed, visible edges solid
+- Height/radius as dashed construction lines
 
-IMPORTANT: For visual elements, you MUST use the parameterized template system. Return visualCode as a JSON string with {template: 'template_name', params: {...}}. Available templates: parallel_lines_transversal, right_triangle, general_triangle, circle_with_angle, coordinate_plane_line, coordinate_plane_parabola, supplementary_angles, rectangle_with_diagonal. Do NOT generate raw TikZ code — it will be rejected and replaced with a [Figure] placeholder.
-
-If none of the templates fit the problem, you may omit the visual (set hasVisual to false).
-
-### CRITICAL: Diagram Labeling Rules for Geometry/Trig
-When generating diagrams with labeled vertices:
-1. **Vertex labels MUST match the problem text exactly.** If the problem says "triangle ABC with angle C = 90°", then C must be at the right angle vertex in the diagram.
-2. **Side labels MUST connect the correct vertices.** Side AB is the segment from vertex A to vertex B. Never label a side with vertices it doesn't connect.
-3. **The side between vertices X and Y is always called XY (or YX).** For example, the base from A to C is "AC", NOT "AB".
-4. **Double-check every label** by mentally tracing: "Does this label sit on the segment between the two vertices named?" If not, fix it.
-5. **Right angle markers** must be placed at the vertex where the 90° angle is.
-6. **Angle labels** must be placed at the correct vertex (angle A is at vertex A).
-7. **Known side lengths** labeled in the diagram must match the values stated in the problem text.
+### Data Visualization
+- Bar charts: ymin=0, symbolic x coords, bar width 12-18pt
+- Scatterplots: only marks, regression lines dashed in red
+- Tables: full grid with |c| borders and \\\\hline
 
 ## Output Format
 
@@ -148,16 +134,16 @@ You MUST output valid JSON in exactly this format:
   "problems": [
     {
       "number": 1,
-      "content": "In the figure below, lines p and q are parallel and are cut by a transversal...",
+      "content": "In the figure below, lines p and q are parallel and are cut by a transversal. If angle x measures 65 degrees, what is the measure of angle y?",
       "choices": {
-        "A": "Answer choice A (use LaTeX for math like $\\\\frac{1}{2}$)",
-        "B": "Answer choice B",
-        "C": "Answer choice C",
-        "D": "Answer choice D"
+        "A": "$25°$",
+        "B": "$65°$",
+        "C": "$115°$",
+        "D": "$130°$"
       },
       "isGridIn": false,
       "hasVisual": true,
-      "visualCode": "{\\"template\\":\\"parallel_lines_transversal\\",\\"params\\":{\\"lineLabels\\":[\\"p\\",\\"q\\"],\\"angleLabels\\":[{\\"position\\":\\"upper-left-1\\",\\"label\\":\\"x°\\"},{\\"position\\":\\"lower-right-2\\",\\"label\\":\\"y°\\"}]}}"
+      "visualCode": "\\\\begin{tikzpicture}[scale=0.8]\\n\\\\draw[thick] (0,2) -- (6,2) node[right] {$p$};\\n\\\\draw[thick] (0,0) -- (6,0) node[right] {$q$};\\n\\\\draw[thick] (1.5,3) -- (4.5,-1);\\n\\\\draw (2.4,2) arc (180:225:0.5);\\n\\\\node at (1.9,1.6) {$x°$};\\n\\\\draw (3.6,0) arc (0:45:0.5);\\n\\\\node at (4.1,0.4) {$y°$};\\n\\\\end{tikzpicture}"
     },
     {
       "number": 2,
@@ -189,8 +175,9 @@ CRITICAL RULES:
 4. For grid-in problems, choices should be null and isGridIn should be true
 5. Include 1-2 grid-in problems per worksheet
 6. visualCode should be null (not an empty string) when hasVisual is false
-7. When a problem benefits from a diagram (geometry, coordinate planes, data), set hasVisual=true and provide visualCode as a template JSON string like: {"template":"right_triangle","params":{...}}. Never use raw TikZ.
-8. NEVER write "in the figure below" or "shown below" or reference any diagram in the problem text UNLESS you are also setting hasVisual=true AND providing a valid visualCode template. If you cannot provide a visual template, rewrite the problem to be self-contained without referencing a figure.`;
+7. When a problem benefits from a diagram, set hasVisual=true and provide the COMPLETE TikZ code in visualCode as a string. The code must be a valid TikZ environment (\\\\begin{tikzpicture}...\\\\end{tikzpicture}) or pgfplots environment. Escape all backslashes as \\\\\\\\ in the JSON string.
+8. NEVER write "in the figure below" or "shown below" in problem text UNLESS you are also setting hasVisual=true AND providing valid TikZ code in visualCode. If you cannot provide a figure, rewrite the problem to be self-contained.
+9. Follow the ARC AND ANGLE RULES exactly — every arc must use actual angular positions, never start from 0° by default.`;
 
 export function buildUserPrompt(
   category: string,

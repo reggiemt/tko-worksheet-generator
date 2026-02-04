@@ -940,23 +940,25 @@ export function renderTemplate(
 // ---------------------------------------------------------------------------
 
 export function resolveVisualCode(visualCode: string): string {
-  // Try to parse as template JSON first
+  // First, try to parse as template JSON (legacy support)
   try {
     const parsed = JSON.parse(visualCode);
     if (parsed && typeof parsed === "object" && parsed.template) {
-      console.log(`[TIKZ] Rendering template "${parsed.template}" with params: ${JSON.stringify(parsed.params).substring(0, 150)}`);
+      console.log(`[TIKZ] Rendering template "${parsed.template}"`);
       const result = renderTemplate(parsed.template, parsed.params || {});
       console.log(`[TIKZ] Template "${parsed.template}" rendered OK (${result.length} chars)`);
       return result;
     }
-    console.warn(`[TIKZ] Parsed JSON but no "template" field found: ${JSON.stringify(parsed).substring(0, 100)}`);
-  } catch (e) {
-    // Not JSON — reject raw TikZ
-    console.warn(`[TIKZ] Failed to parse visualCode as JSON: ${e instanceof Error ? e.message : e}`);
+  } catch {
+    // Not JSON — check if it's raw TikZ (the preferred approach)
   }
 
-  // Raw TikZ is NOT allowed — it causes compilation failures on the server.
-  // Claude must use the template system (JSON with template name + params).
-  console.warn(`[TIKZ] Rejecting raw TikZ (not template JSON): ${visualCode.substring(0, 150)}`);
+  // Accept raw TikZ code directly
+  if (visualCode.includes("tikzpicture") || visualCode.includes("\\begin{axis}") || visualCode.includes("\\draw") || visualCode.includes("\\fill") || visualCode.includes("tabular")) {
+    console.log(`[TIKZ] Using raw TikZ code (${visualCode.length} chars)`);
+    return visualCode;
+  }
+
+  console.warn(`[TIKZ] Unrecognized visualCode format: ${visualCode.substring(0, 150)}`);
   return "\\textit{[Figure]}";
 }
