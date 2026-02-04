@@ -39,23 +39,37 @@ All distractors must be:
 - Definitively wrong (not an edge case)
 - Different from each other
 
-## Difficulty Calibration
+## Difficulty Calibration (SAT-Anchored)
 
-### Easy
-- Single concept, 1-2 steps
-- Straightforward application of formulas
-- Clear, direct wording
+These map to real SAT difficulty ranges. STAY WITHIN BOUNDS — do not overshoot.
 
-### Medium
-- Combines 2 concepts or requires 2-3 steps
-- May require setting up equations from context
-- Some interpretation needed
+### Easy (SAT questions 1-8 of each module)
+- Single concept, 1-2 steps maximum
+- Direct plug-and-solve or single operation
+- A student scoring 450-500 should get these right
+- Example level: "Solve 3x + 7 = 22" or "What is 15% of 80?"
+- NO multi-step reasoning, NO combining concepts
 
-### Hard
-- Multi-step reasoning (3+ steps)
-- Combines multiple concepts
-- Abstract or complex contexts
-- Requires strategic problem-solving approach
+### Medium (SAT questions 9-18 of each module)
+- 2-3 steps, but each step is straightforward
+- May require setting up ONE equation from context
+- A student scoring 550-600 should get most of these right
+- Example level: "A store marks up prices by 20%, then offers a 10% discount. If the original price is $50, what is the final price?"
+- Should be accessible to a competent algebra student — NOT competition-level
+- When modifiers are active, keep the BASE problem simpler to compensate
+
+### Hard (SAT questions 19-27 of each module)
+- Multi-step reasoning (3-4 steps)
+- May combine 2 concepts
+- A student scoring 700+ should find these challenging but doable
+- Example level: "Given f(x) = 2x² - 8x + k, for what value of k does the equation f(x) = 0 have exactly one real solution?"
+- These are hard FOR THE SAT — not competition math, not college-level
+
+### IMPORTANT: Modifier Interaction with Difficulty
+When problem modifiers are active (fractions, unknown constants, no-Desmos, etc.), they add complexity. To maintain the target difficulty level:
+- **With 1 modifier active:** Generate problems at the LOWER END of the difficulty range
+- **With 2+ modifiers active:** Generate problems that would normally be ONE difficulty level BELOW, then the modifiers bring them up to target
+- Example: Medium difficulty + fractions + unknown constants → generate what would normally be EASY-to-MEDIUM base problems, and the modifiers will make them medium
 
 ## Visual Elements (Templates)
 Include visual elements for approximately 30% of problems where appropriate:
@@ -185,10 +199,20 @@ export function buildUserPrompt(
   const topicName = subcategoryInfo?.name ?? subcategory;
   const topicDescription = subcategoryInfo?.description ?? "";
 
+  const activeModifierCount = modifiers
+    ? Object.values(modifiers).filter(Boolean).length
+    : 0;
+
+  const modifierAdjustment = activeModifierCount >= 2
+    ? " IMPORTANT: Multiple modifiers are active — generate simpler BASE problems so the modifiers bring total difficulty to the target level. Do NOT make the base problem hard AND add modifiers on top."
+    : activeModifierCount === 1
+    ? " Note: A modifier is active — aim for the lower end of this difficulty range."
+    : "";
+
   const difficultyGuide = {
-    easy: "Focus on single-concept problems with 1-2 steps. Use straightforward wording and clear setups.",
-    medium: "Include problems that combine 2 concepts or require 2-3 steps. Some problems should require setting up equations from word problems.",
-    hard: "Create challenging problems with multi-step reasoning (3+ steps). Include problems that combine multiple concepts and require strategic thinking.",
+    easy: `Focus on single-concept problems with 1-2 steps. Direct plug-and-solve. A student scoring 450-500 on the SAT should get these right. Like questions 1-8 on an SAT module.${modifierAdjustment}`,
+    medium: `Problems should have 2-3 straightforward steps. Like questions 9-18 on an SAT module. A 550-600 scorer should get most right. These should feel like TYPICAL SAT problems — not competition math. Keep problems accessible.${modifierAdjustment}`,
+    hard: `Multi-step reasoning (3-4 steps), may combine 2 concepts. Like questions 19-27 on an SAT module. A 700+ scorer should find these challenging but doable. Hard FOR THE SAT — not college-level or competition math.${modifierAdjustment}`,
   };
 
   // Build modifier instructions
@@ -280,10 +304,20 @@ export function buildMultiTopicUserPrompt(
   const perTopic = Math.floor(questionCount / topicCount);
   const remainder = questionCount - perTopic * topicCount;
 
+  const activeModifierCount = modifiers
+    ? Object.values(modifiers).filter(Boolean).length
+    : 0;
+
+  const modifierAdjustment = activeModifierCount >= 2
+    ? " IMPORTANT: Multiple modifiers are active — generate simpler BASE problems so the modifiers bring total difficulty to the target level. Do NOT make the base problem hard AND add modifiers on top."
+    : activeModifierCount === 1
+    ? " Note: A modifier is active — aim for the lower end of this difficulty range."
+    : "";
+
   const difficultyGuide = {
-    easy: "Focus on single-concept problems with 1-2 steps. Use straightforward wording and clear setups.",
-    medium: "Include problems that combine 2 concepts or require 2-3 steps. Some problems should require setting up equations from word problems.",
-    hard: "Create challenging problems with multi-step reasoning (3+ steps). Include problems that combine multiple concepts and require strategic thinking.",
+    easy: `Focus on single-concept problems with 1-2 steps. Direct plug-and-solve. Like questions 1-8 on an SAT module. A 450-500 scorer should get these right.${modifierAdjustment}`,
+    medium: `Problems should have 2-3 straightforward steps. Like questions 9-18 on an SAT module. A 550-600 scorer should get most right. Keep problems accessible — typical SAT level, not competition math.${modifierAdjustment}`,
+    hard: `Multi-step reasoning (3-4 steps), may combine 2 concepts. Like questions 19-27 on an SAT module. Hard FOR THE SAT — not college-level or competition math.${modifierAdjustment}`,
   };
 
   const topicList = uniqueTopics
