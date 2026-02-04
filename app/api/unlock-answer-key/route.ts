@@ -86,10 +86,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check monthly unlock limit
+    // Check lifetime unlock limit (1 free answer key ever)
     const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const unlockFlagKey = `worksheet:lead-unlock:${normalizedEmail}:${monthKey}`;
+    const unlockFlagKey = `worksheet:lead-unlock:${normalizedEmail}:lifetime`;
 
     const alreadyUnlocked = await redis.get<string>(unlockFlagKey);
     if (alreadyUnlocked) {
@@ -97,7 +96,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: "already_used",
-          message: "You've already used your free answer key this month.",
+          message: "You've already used your free answer key.",
         },
         { status: 429 }
       );
@@ -135,8 +134,8 @@ export async function POST(request: NextRequest) {
     };
     await redis.set(leadKey, JSON.stringify(leadData));
 
-    // Set monthly unlock flag (45-day TTL)
-    await redis.set(unlockFlagKey, "1", { ex: 45 * 24 * 60 * 60 });
+    // Set lifetime unlock flag (no expiry)
+    await redis.set(unlockFlagKey, "1");
 
     // Generate the answer key PDF
     console.log(`Generating answer key for lead: ${normalizedEmail}`);

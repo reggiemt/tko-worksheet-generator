@@ -43,7 +43,7 @@ export function UsageBanner({ onLimitReached, refreshKey, hideWhenAuthenticated 
   if (!usage) {
     return (
       <div className="text-xs text-center text-muted-foreground">
-        5 free worksheets per month
+        3 free worksheets
       </div>
     );
   }
@@ -72,7 +72,7 @@ export function UsageBanner({ onLimitReached, refreshKey, hideWhenAuthenticated 
         <div className="text-sm">
           <p className="font-medium text-amber-800 dark:text-amber-200">
             {usage.tier === "free"
-              ? "You've used all 5 free worksheets this month"
+              ? "You've used all 3 free worksheets"
               : `You've used all ${usage.limit} worksheets ${periodLabel}`}
           </p>
           {usage.tier === "free" ? (

@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             success: false,
-            error: "You've used all 5 free worksheets this month! Upgrade to Starter ($5/mo) for 30 worksheets/month, or Pro ($25/mo) for 100.",
+            error: "You've used all 3 free worksheets! Upgrade to Starter ($5/mo) for 30 worksheets/month, or Pro ($25/mo) for 100.",
           },
           { status: 429 }
         );

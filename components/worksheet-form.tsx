@@ -475,7 +475,7 @@ export function WorksheetForm() {
                 <div className="space-y-3 p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900">
                   {unlockError === "already_used" ? (
                     <div className="text-sm text-blue-800 dark:text-blue-200">
-                      <p className="font-medium">You&apos;ve already used your free answer key this month.</p>
+                      <p className="font-medium">You&apos;ve already used your free answer key.</p>
                       <a
                         href="/pricing"
                         className="inline-flex items-center gap-1 mt-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium underline"
@@ -497,7 +497,7 @@ export function WorksheetForm() {
                         </h4>
                       </div>
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        Enter your email and we&apos;ll send the answer key (1 free/month)
+                        Enter your email and we&apos;ll send the answer key (1 free unlock)
                       </p>
                       <div className="flex gap-2">
                         <input

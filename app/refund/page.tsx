@@ -56,8 +56,8 @@ export default function RefundPage() {
               <p className="text-sm text-slate-600 leading-relaxed">
                 <strong>What happens when you cancel:</strong> Your subscription remains active through the end
                 of your current billing period. You&rsquo;ll continue to have full access to your plan&rsquo;s features
-                until that period ends. After that, your account reverts to the free tier (5 worksheets
-                per month, no answer keys, no modifiers).
+                until that period ends. After that, your account reverts to the free tier (3 worksheets
+                total, no answer keys, no modifiers).
               </p>
             </div>
           </section>
@@ -122,7 +122,7 @@ export default function RefundPage() {
           <section>
             <h2 className="text-xl font-bold text-[#1a365d] mb-3 pb-2 border-b border-slate-200">Free Tier</h2>
             <p className="text-slate-600 leading-relaxed">
-              The free tier of Test Prep Sheets (5 worksheets per month) requires no payment
+              The free tier of Test Prep Sheets (3 free worksheets) requires no payment
               and no account. There is nothing to cancel or refund for free tier usage.
             </p>
           </section>

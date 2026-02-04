@@ -60,7 +60,7 @@ interface TierLimits {
 }
 
 export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
-  free: { maxGenerations: 5, period: "month", label: "Free" },
+  free: { maxGenerations: 3, period: "total", label: "Free" },
   starter: { maxGenerations: 30, period: "month", label: "Starter" },
   pro: { maxGenerations: 100, period: "month", label: "Pro" },
   enterprise: { maxGenerations: 500, period: "month", label: "Enterprise" },
@@ -70,8 +70,8 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
 // ── Free tier tracking (no login required) ────────────────────────
 
 function getFreeKey(ip: string): string {
-  const month = new Date().toISOString().slice(0, 7); // YYYY-MM
-  return `worksheet:free:${ip}:${month}`;
+  // Lifetime total — no monthly reset
+  return `worksheet:free:${ip}:total`;
 }
 
 export async function checkFreeRateLimit(ip: string): Promise<RateLimitResult> {
@@ -84,38 +84,26 @@ export async function checkFreeRateLimit(ip: string): Promise<RateLimitResult> {
   const count = (await getRedis()!.get<number>(key)) || 0;
   const limit = TIER_LIMITS.free.maxGenerations;
 
-  // Reset at end of month
-  const now = new Date();
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
   if (count >= limit) {
     return {
       success: false,
       remaining: 0,
-      reset: endOfMonth.getTime(),
+      reset: 0, // No reset — lifetime limit
     };
   }
 
   return {
     success: true,
     remaining: limit - count,
-    reset: endOfMonth.getTime(),
+    reset: 0,
   };
 }
 
 export async function incrementFreeUsage(ip: string): Promise<void> {
   if (!getRedis()) return;
   const key = getFreeKey(ip);
-  const exists = await getRedis()!.exists(key);
   await getRedis()!.incr(key);
-
-  if (!exists) {
-    // Expire at end of month + 1 day buffer
-    const now = new Date();
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 2);
-    const ttlSeconds = Math.ceil((endOfMonth.getTime() - now.getTime()) / 1000);
-    await getRedis()!.expire(key, ttlSeconds);
-  }
+  // No expiry — lifetime limit
 }
 
 // ── Paid tier tracking (requires userId) ──────────────────────────
@@ -216,7 +204,7 @@ export async function getUsageInfo(
 ): Promise<UsageInfo> {
   if (!getRedis()) {
     const limit = TIER_LIMITS.free.maxGenerations;
-    return { tier: "free", used: 0, limit, remaining: limit, period: "month" };
+    return { tier: "free", used: 0, limit, remaining: limit, period: "total" };
   }
 
   const effectiveTier = tier || "free";

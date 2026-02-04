@@ -106,9 +106,9 @@ export default function TermsPage() {
               <div className="bg-slate-50 rounded-lg border border-slate-200 p-4">
                 <h3 className="font-semibold text-[#1a365d] mb-1">Free — $0/month</h3>
                 <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• 5 worksheets per month</li>
+                  <li>• 3 free worksheets</li>
                   <li>• No account required</li>
-                  <li>• Answer keys <strong>not included</strong> (unlock 1/month via email)</li>
+                  <li>• Answer keys <strong>not included</strong> (1 free unlock via email)</li>
                   <li>• Problem modifiers not available</li>
                   <li>• 1 screenshot upload</li>
                 </ul>

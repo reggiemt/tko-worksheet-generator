@@ -68,7 +68,7 @@ export default function Home() {
               a printable PDF worksheet with step-by-step solutions instantly.
             </p>
             <p className="text-sm text-slate-500 mb-2">
-              5 free worksheets every month. No account needed.
+              3 free worksheets to try it out. No account needed.
             </p>
           </div>
         </section>
@@ -201,9 +201,9 @@ export default function Home() {
                 <p className="text-3xl font-bold text-white mb-1">
                   $0<span className="text-sm font-normal text-white/60">/mo</span>
                 </p>
-                <p className="text-[#e53e3e] text-sm font-medium mb-5">5 worksheets/month</p>
+                <p className="text-[#e53e3e] text-sm font-medium mb-5">3 free worksheets</p>
                 <ul className="space-y-2 mb-6">
-                  {["5 worksheets per month", "All SAT math topics", "3 difficulty levels", "PDF worksheet download", "Unlock 1 answer key/month via email", "No account required"].map((f) => (
+                  {["3 free worksheets", "All SAT math topics", "3 difficulty levels", "PDF worksheet download", "Unlock 1 answer key via email", "No account required"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="h-4 w-4 text-green-400 shrink-0" />
                       {f}
