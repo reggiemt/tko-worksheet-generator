@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateProblems } from "@/lib/claude-client";
+import { generateProblems, verifyProblems, validateAnswerChoices } from "@/lib/claude-client";
 import { compileLaTeX } from "@/lib/latex-client";
 import { buildWorksheetLatex, buildAnswerKeyLatex } from "@/lib/latex-templates";
 import {
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
         ? `Generating ${questionCount} ${difficulty} mixed-topic problems for ${effectiveTopics.map((t) => `${t.category}.${t.subcategory}`).join(", ")}${activeModifiers.length ? ` [modifiers: ${activeModifiers.join(", ")}]` : ""}`
         : `Generating ${questionCount} ${difficulty} problems for ${category}.${subcategory}${activeModifiers.length ? ` [modifiers: ${activeModifiers.join(", ")}]` : ""}`
     );
-    const worksheet = await generateProblems({
+    let worksheet = await generateProblems({
       category,
       subcategory,
       difficulty,
@@ -118,6 +118,42 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       modifiers,
       topics: effectiveTopics,
     });
+
+    // 6.5a  Quick structural validation (no API call)
+    const choiceIssues = validateAnswerChoices(worksheet.problems, worksheet.answers);
+    if (choiceIssues.length > 0) {
+      console.log(`Answer-choice validation issues: ${choiceIssues.join("; ")}`);
+    }
+
+    // 6.5b  Blind verification — have Claude re-solve and compare
+    const verification = await verifyProblems(worksheet.problems, worksheet.answers);
+    if (!verification.passed) {
+      const failCount = verification.problemResults.filter((r) => !r.passed).length;
+      console.log(
+        `Verification failed for ${failCount} problem(s): ${verification.problemResults
+          .filter((r) => !r.passed)
+          .map((r) => `#${r.number} (expected ${r.expectedAnswer}, got ${r.verifiedAnswer})`)
+          .join(", ")}. Regenerating…`
+      );
+
+      // Retry ONCE
+      worksheet = await generateProblems({
+        category,
+        subcategory,
+        difficulty,
+        questionCount,
+        modifiers,
+        topics: effectiveTopics,
+      });
+
+      const recheck = await verifyProblems(worksheet.problems, worksheet.answers);
+      if (!recheck.passed) {
+        const stillFailed = recheck.problemResults.filter((r) => !r.passed).length;
+        console.log(
+          `Verification still failed for ${stillFailed} problem(s) after retry. Proceeding with best effort.`
+        );
+      }
+    }
 
     // 7. Build LaTeX documents
     console.log("Building LaTeX documents...");

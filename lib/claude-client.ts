@@ -2,6 +2,19 @@ import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT, buildUserPrompt, buildMultiTopicUserPrompt } from "./prompts";
 import type { Difficulty, GeneratedWorksheet, Problem, Answer, ProblemModifiers } from "./types";
 
+// ── Verification types ──────────────────────────────────────────────
+
+export interface VerificationResult {
+  passed: boolean;
+  problemResults: {
+    number: number;
+    passed: boolean;
+    expectedAnswer: string;
+    verifiedAnswer: string;
+    issue?: string;
+  }[];
+}
+
 interface TopicPair {
   category: string;
   subcategory: string;
@@ -228,4 +241,138 @@ function parseClaudeResponse(text: string): ParsedResponse {
       `Failed to parse AI response: ${error instanceof Error ? error.message : "Invalid JSON"}`
     );
   }
+}
+
+// ── Answer-choice validation (synchronous, no API call) ─────────────
+
+/**
+ * For every non-grid-in problem, verify that correctAnswer is one of A/B/C/D.
+ * Returns a list of human-readable issues (empty = all good).
+ */
+export function validateAnswerChoices(problems: Problem[], answers: Answer[]): string[] {
+  const issues: string[] = [];
+  const validLetters = new Set(["A", "B", "C", "D"]);
+
+  for (const answer of answers) {
+    const problem = problems.find((p) => p.number === answer.number);
+    if (!problem) {
+      issues.push(`Problem #${answer.number}: answer references a problem that doesn't exist`);
+      continue;
+    }
+    if (problem.isGridIn) continue; // grid-in answers are numeric, not A-D
+
+    if (!validLetters.has(answer.correctAnswer.trim().toUpperCase())) {
+      issues.push(
+        `Problem #${answer.number}: correctAnswer "${answer.correctAnswer}" is not one of A, B, C, D`
+      );
+    }
+  }
+
+  return issues;
+}
+
+// ── Blind verification via a second Claude call ─────────────────────
+
+/**
+ * Send every generated problem (without the answer key) to Claude and ask it
+ * to solve each one from scratch.  Compare its answers to the key.
+ */
+export async function verifyProblems(
+  problems: Problem[],
+  answers: Answer[]
+): Promise<VerificationResult> {
+  const client = getClient();
+
+  // Build a text representation of each problem for the verifier
+  const problemDescriptions = problems.map((p) => {
+    let desc = `Problem ${p.number}:\n${p.content}`;
+    if (p.hasVisual) {
+      desc += "\n[This problem includes a diagram — work from the mathematical content only.]";
+    }
+    if (p.choices) {
+      desc += `\nA) ${p.choices.A}\nB) ${p.choices.B}\nC) ${p.choices.C}\nD) ${p.choices.D}`;
+    }
+    if (p.isGridIn) {
+      desc += "\n(Grid-in: provide a numerical answer)";
+    }
+    return desc;
+  });
+
+  const verificationPrompt = `You are an SAT math expert. Solve each problem independently. Do NOT guess — show brief work.
+
+For multiple-choice problems, your answer must be exactly one of A, B, C, or D.
+For grid-in problems, give the numerical answer.
+
+${problemDescriptions.join("\n\n---\n\n")}
+
+Solve each problem independently. For each, give your answer and brief work.
+Output ONLY valid JSON (no markdown fences): [{"number": 1, "answer": "B", "brief_work": "..."}, ...]`;
+
+  try {
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 4000,
+      messages: [{ role: "user", content: verificationPrompt }],
+    });
+
+    const content = response.content[0];
+    if (content.type !== "text") {
+      console.error("Verification: unexpected response type");
+      return { passed: true, problemResults: [] }; // fail-open
+    }
+
+    let jsonText = content.text.trim();
+    // Strip markdown fences just in case
+    if (jsonText.startsWith("```json")) jsonText = jsonText.slice(7);
+    else if (jsonText.startsWith("```")) jsonText = jsonText.slice(3);
+    if (jsonText.endsWith("```")) jsonText = jsonText.slice(0, -3);
+    jsonText = jsonText.trim();
+
+    const verifierAnswers: { number: number; answer: string; brief_work: string }[] =
+      JSON.parse(jsonText);
+
+    // Build a quick lookup for expected answers
+    const expectedMap = new Map(answers.map((a) => [a.number, a.correctAnswer.trim().toUpperCase()]));
+
+    const problemResults = verifierAnswers.map((v) => {
+      const expected = expectedMap.get(v.number) ?? "?";
+      const verified = v.answer.trim().toUpperCase();
+      const passed = normalizeAnswer(expected) === normalizeAnswer(verified);
+      return {
+        number: v.number,
+        passed,
+        expectedAnswer: expected,
+        verifiedAnswer: verified,
+        ...(passed ? {} : { issue: `Verifier got ${verified}, answer key says ${expected}. Work: ${v.brief_work}` }),
+      };
+    });
+
+    return {
+      passed: problemResults.every((r) => r.passed),
+      problemResults,
+    };
+  } catch (error) {
+    // If verification itself fails, fail-open so we still deliver a worksheet
+    console.error("Verification call failed, proceeding anyway:", error);
+    return { passed: true, problemResults: [] };
+  }
+}
+
+/** Normalise an answer for comparison (handles numeric grid-in variations). */
+function normalizeAnswer(ans: string): string {
+  const s = ans.trim().toUpperCase();
+  // If it's a letter answer, return as-is
+  if (/^[A-D]$/.test(s)) return s;
+  // For numeric answers, parse to number and back to handle "3/2" vs "1.5" etc.
+  try {
+    if (s.includes("/")) {
+      const [num, den] = s.split("/").map(Number);
+      if (!isNaN(num) && !isNaN(den) && den !== 0) return String(num / den);
+    }
+    const n = parseFloat(s);
+    if (!isNaN(n)) return String(n);
+  } catch {
+    // fall through
+  }
+  return s;
 }
