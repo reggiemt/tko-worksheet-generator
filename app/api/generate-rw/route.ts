@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
             `Generating ${questionCount} ${difficulty} R/W problems for ${category}.${subcategory}`
           );
 
-          let worksheet;
+          let worksheet: Awaited<ReturnType<typeof generateRWProblems>> | undefined;
           const maxRetries = 2;
           for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
             try {
@@ -128,6 +128,9 @@ export async function POST(request: NextRequest) {
                 throw genError;
               }
             }
+          }
+          if (!worksheet) {
+            throw new Error("Failed to generate worksheet after all retry attempts");
           }
 
           send({
