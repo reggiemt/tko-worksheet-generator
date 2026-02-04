@@ -56,7 +56,7 @@ export default function Home() {
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-[#e53e3e]/10 text-[#e53e3e] px-4 py-1.5 rounded-full text-sm font-medium mb-6">
               <Zap className="h-4 w-4" />
-              AI-Powered SAT Math Practice
+              AI-Powered SAT Math &amp; Reading/Writing Practice
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#1a365d] mb-5">
               Generate{" "}
@@ -64,7 +64,7 @@ export default function Home() {
               {" "}in Seconds
             </h1>
             <p className="text-lg md:text-xl text-slate-600 mb-3 max-w-2xl mx-auto">
-              Pick a topic or snap a photo of any SAT problem — our AI creates
+              Math or Reading &amp; Writing — pick a topic or snap a photo and our AI creates
               a printable PDF worksheet with step-by-step solutions instantly.
             </p>
             <p className="text-sm text-slate-500 mb-2">
@@ -82,7 +82,7 @@ export default function Home() {
               </div>
               <h3 className="font-semibold text-[#1a365d] mb-1">1. Upload or Choose</h3>
               <p className="text-sm text-slate-500">
-                Snap a photo of any SAT problem or pick from 23 math topics
+                Snap a photo of any SAT problem or pick from 23 math topics &amp; 11 R/W skills
               </p>
             </div>
             <div className="text-center p-4">
@@ -122,28 +122,28 @@ export default function Home() {
                 <Target className="h-8 w-8 text-[#e53e3e] mb-3" />
                 <h3 className="font-semibold text-[#1a365d] mb-2">Targeted Practice</h3>
                 <p className="text-sm text-slate-500">
-                  Drill exactly the topics you struggle with. No more wasting time on problems you already know.
+                  Drill exactly the topics you struggle with — 23 math topics and 11 R/W skills to choose from.
                 </p>
               </div>
               <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                 <Brain className="h-8 w-8 text-[#e53e3e] mb-3" />
-                <h3 className="font-semibold text-[#1a365d] mb-2">No-Desmos Mode</h3>
+                <h3 className="font-semibold text-[#1a365d] mb-2">Math &amp; Reading/Writing</h3>
                 <p className="text-sm text-slate-500">
-                  Build real algebraic reasoning skills. Problems that can&rsquo;t be shortcut with a graphing calculator.
+                  Full SAT coverage — math with No-Desmos mode, plus all R/W question types including grammar, vocabulary, and evidence.
                 </p>
               </div>
               <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                 <Sparkles className="h-8 w-8 text-[#e53e3e] mb-3" />
                 <h3 className="font-semibold text-[#1a365d] mb-2">Verified Answers</h3>
                 <p className="text-sm text-slate-500">
-                  Every problem is reverse-engineered from the answer. Step-by-step solutions included.
+                  Every problem is verified by a second AI pass. Detailed explanations for every answer.
                 </p>
               </div>
               <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                 <Camera className="h-8 w-8 text-[#e53e3e] mb-3" />
                 <h3 className="font-semibold text-[#1a365d] mb-2">Screenshot Magic</h3>
                 <p className="text-sm text-slate-500">
-                  Photo a problem from any practice test. AI identifies the topic and generates similar problems instantly.
+                  Photo a math problem from any practice test. AI identifies the topic and generates similar problems instantly.
                 </p>
               </div>
             </div>
@@ -164,18 +164,22 @@ export default function Home() {
             </p>
             <p className="text-sm text-slate-400">— TKO Prep Student</p>
 
-            <div className="mt-10 grid grid-cols-3 gap-6 text-center">
+            <div className="mt-10 grid grid-cols-4 gap-6 text-center">
               <div>
                 <p className="text-3xl font-bold text-[#1a365d]">23</p>
-                <p className="text-xs text-slate-500 mt-1">SAT Math Topics</p>
+                <p className="text-xs text-slate-500 mt-1">Math Topics</p>
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-[#1a365d]">11</p>
+                <p className="text-xs text-slate-500 mt-1">R/W Skills</p>
               </div>
               <div>
                 <p className="text-3xl font-bold text-[#1a365d]">3</p>
                 <p className="text-xs text-slate-500 mt-1">Difficulty Levels</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-[#1a365d]">5</p>
-                <p className="text-xs text-slate-500 mt-1">Problem Modifiers</p>
+                <p className="text-3xl font-bold text-[#1a365d]">12</p>
+                <p className="text-xs text-slate-500 mt-1">Modifiers</p>
               </div>
             </div>
           </div>
@@ -203,7 +207,7 @@ export default function Home() {
                 </p>
                 <p className="text-[#e53e3e] text-sm font-medium mb-5">3 free worksheets</p>
                 <ul className="space-y-2 mb-6">
-                  {["3 free worksheets", "All SAT math topics", "3 difficulty levels", "PDF worksheet download", "Unlock 1 answer key via email", "No account required"].map((f) => (
+                  {["3 free worksheets", "All SAT math & R/W topics", "3 difficulty levels", "PDF worksheet download", "Unlock 1 answer key via email", "No account required"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="h-4 w-4 text-green-400 shrink-0" />
                       {f}

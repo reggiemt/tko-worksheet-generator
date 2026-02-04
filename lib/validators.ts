@@ -30,6 +30,28 @@ export const analyzeRequestSchema = z.object({
 
 export type AnalyzeRequestInput = z.infer<typeof analyzeRequestSchema>;
 
+// R/W modifier schema
+export const rwModifiersSchema = z.object({
+  passageType: z.enum(["science", "literature", "history", "humanities", "mixed"]).default("mixed"),
+  includeCharts: z.boolean().default(false),
+  includePoetry: z.boolean().default(false),
+  includeDualPassages: z.boolean().default(false),
+  grammarHeavy: z.boolean().default(false),
+  vocabularyHeavy: z.boolean().default(false),
+  transitionsFocus: z.boolean().default(false),
+  evidenceFocus: z.boolean().default(false),
+}).optional();
+
+export const generateRWRequestSchema = z.object({
+  category: z.string().min(1, "Category is required"),
+  subcategory: z.string().min(1, "Subcategory is required"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  questionCount: z.union([z.literal(10), z.literal(15), z.literal(20)]),
+  modifiers: rwModifiersSchema,
+});
+
+export type GenerateRWRequestInput = z.infer<typeof generateRWRequestSchema>;
+
 // Max image size: 10MB in base64 (~13.3MB string)
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 export const MAX_IMAGE_BASE64_LENGTH = Math.ceil(MAX_IMAGE_SIZE * 1.37);

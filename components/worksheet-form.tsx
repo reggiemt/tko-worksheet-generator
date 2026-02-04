@@ -2,17 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { CategorySelector } from "./category-selector";
+import { RWCategorySelector } from "./rw-category-selector";
 import { DifficultySelector } from "./difficulty-selector";
 import { QuestionCountSelector } from "./question-count-selector";
 import { ScreenshotUpload, type AnalysisResult } from "./screenshot-upload";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
-import { Loader2, Download, AlertCircle, Camera, BookOpen, Lock, Mail, CheckCircle } from "lucide-react";
+import { Loader2, Download, AlertCircle, Camera, BookOpen, Lock, Mail, CheckCircle, Calculator, FileText } from "lucide-react";
 import type { Difficulty, QuestionCount, GenerateResponse, ProblemModifiers, GenerateStreamEvent } from "@/lib/types";
 import { DEFAULT_MODIFIERS } from "@/lib/types";
+import type { RWModifiers } from "@/lib/rw-types";
+import { DEFAULT_RW_MODIFIERS } from "@/lib/rw-types";
 import { getSubcategoryName } from "@/lib/categories";
+import { getRWSubcategoryName } from "@/lib/rw-categories";
 import { ProblemModifiersSelector } from "./problem-modifiers";
+import { RWModifiersSelector } from "./rw-modifiers";
 
+type TestType = "math" | "rw";
 type TabMode = "screenshot" | "manual";
 
 interface UsageData {
@@ -26,6 +32,7 @@ interface UsageData {
 }
 
 export function WorksheetForm() {
+  const [testType, setTestType] = useState<TestType>("math");
   const [tab, setTab] = useState<TabMode>("screenshot");
   const [category, setCategory] = useState("");
   const [subcategory, setSubcategory] = useState("");
@@ -35,6 +42,7 @@ export function WorksheetForm() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [modifiers, setModifiers] = useState<ProblemModifiers>({ ...DEFAULT_MODIFIERS });
+  const [rwModifiers, setRwModifiers] = useState<RWModifiers>({ ...DEFAULT_RW_MODIFIERS });
   const [screenshotDetected, setScreenshotDetected] = useState(false);
   const [usageRefreshKey, setUsageRefreshKey] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
@@ -80,6 +88,21 @@ export function WorksheetForm() {
       .catch(() => {});
   }, [usageRefreshKey]);
 
+  // Reset selections when switching test type
+  const handleTestTypeChange = (type: TestType) => {
+    setTestType(type);
+    setCategory("");
+    setSubcategory("");
+    setError(null);
+    setResult(null);
+    setScreenshotDetected(false);
+    setMultiTopics([]);
+    // For R/W, default to manual mode (no screenshot)
+    if (type === "rw") {
+      setTab("manual");
+    }
+  };
+
   const isFormValid = category && subcategory;
 
   const handleCategoryChange = (value: string) => {
@@ -102,7 +125,6 @@ export function WorksheetForm() {
       setScreenshotDetected(false);
       return;
     }
-    // Collect unique topic pairs
     const topics = results.map((r) => ({
       category: r.category,
       subcategory: r.subcategory,
@@ -112,7 +134,6 @@ export function WorksheetForm() {
     setError(null);
     setResult(null);
 
-    // Use the first result's difficulty as default
     if (results.length > 0) {
       setDifficulty(results[0].difficulty);
     }
@@ -147,13 +168,11 @@ export function WorksheetForm() {
         return;
       }
 
-      // If email was sent, just show success message
       if (data.delivered === "email") {
         setUnlockSuccess(true);
         return;
       }
 
-      // Graceful degradation: if email failed, backend returned PDF directly
       if (data.delivered === "direct" && data.answerKeyPdf) {
         setResult((prev) =>
           prev ? { ...prev, answerKeyPdf: data.answerKeyPdf } : prev
@@ -185,21 +204,27 @@ export function WorksheetForm() {
     setUnlockSuccess(false);
 
     try {
+      // Determine API endpoint based on test type
+      const apiEndpoint = testType === "rw" ? "/api/generate-rw" : "/api/generate";
+
       // Build request body
       const body: Record<string, unknown> = {
         category,
         subcategory,
         difficulty,
         questionCount,
-        modifiers,
       };
 
-      // If multi-screenshot detected, include topics array
-      if (multiTopics.length > 1) {
-        body.topics = multiTopics;
+      if (testType === "rw") {
+        body.modifiers = rwModifiers;
+      } else {
+        body.modifiers = modifiers;
+        if (multiTopics.length > 1) {
+          body.topics = multiTopics;
+        }
       }
 
-      const response = await fetch("/api/generate", {
+      const response = await fetch(apiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -207,7 +232,6 @@ export function WorksheetForm() {
 
       const contentType = response.headers.get("content-type") || "";
 
-      // Handle streaming NDJSON response (progress events)
       if (contentType.includes("application/x-ndjson") && response.body) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -237,7 +261,6 @@ export function WorksheetForm() {
                 throw new Error(event.error);
               }
             } catch (parseErr) {
-              // If it's a re-thrown error from above, propagate it
               if (parseErr instanceof Error && !parseErr.message.includes("JSON")) {
                 throw parseErr;
               }
@@ -246,14 +269,12 @@ export function WorksheetForm() {
           }
         }
 
-        // Stream ended without complete or error — server crashed/timed out
         if (!receivedComplete) {
           throw new Error(
             "Generation was interrupted — the server may have timed out. Try fewer questions or an easier difficulty."
           );
         }
       } else if (contentType.includes("application/json")) {
-        // Fallback: handle regular JSON response (validation errors)
         const data: GenerateResponse = await response.json();
         if (!data.success) {
           throw new Error(data.error || "Generation failed");
@@ -261,7 +282,6 @@ export function WorksheetForm() {
         setResult(data);
         setUsageRefreshKey((k) => k + 1);
       } else {
-        // Non-JSON, non-stream: Vercel platform error
         const text = await response.text();
         throw new Error(
           response.status === 504 || text.toLowerCase().includes("timeout")
@@ -288,112 +308,168 @@ export function WorksheetForm() {
     document.body.removeChild(link);
   };
 
+  const getTopicName = () => {
+    if (testType === "rw") {
+      return getRWSubcategoryName(category, subcategory);
+    }
+    if (multiTopics.length > 1) return "Mixed_Topics";
+    return getSubcategoryName(category, subcategory);
+  };
+
   const handleDownloadWorksheet = () => {
     if (result?.worksheetPdf) {
-      const topicName =
-        multiTopics.length > 1
-          ? "Mixed_Topics"
-          : getSubcategoryName(category, subcategory).replace(/\s+/g, "_");
-      downloadPdf(result.worksheetPdf, `SAT_${topicName}_${difficulty}_worksheet.pdf`);
+      const topicName = getTopicName().replace(/\s+/g, "_");
+      const prefix = testType === "rw" ? "SAT_RW" : "SAT_Math";
+      downloadPdf(result.worksheetPdf, `${prefix}_${topicName}_${difficulty}_worksheet.pdf`);
     }
   };
 
   const handleDownloadAnswerKey = () => {
     if (result?.answerKeyPdf) {
-      const topicName =
-        multiTopics.length > 1
-          ? "Mixed_Topics"
-          : getSubcategoryName(category, subcategory).replace(/\s+/g, "_");
-      downloadPdf(result.answerKeyPdf, `SAT_${topicName}_${difficulty}_answers.pdf`);
+      const topicName = getTopicName().replace(/\s+/g, "_");
+      const prefix = testType === "rw" ? "SAT_RW" : "SAT_Math";
+      downloadPdf(result.answerKeyPdf, `${prefix}_${topicName}_${difficulty}_answers.pdf`);
     }
   };
 
   return (
     <Card className="w-full max-w-2xl mx-auto border-[#1a365d]/20 shadow-lg">
       <CardContent className="pt-6">
-        {/* Tab Switcher */}
+        {/* Test Type Toggle */}
         <div className="flex rounded-lg bg-muted p-1 mb-6">
           <button
             type="button"
-            onClick={() => setTab("screenshot")}
+            onClick={() => handleTestTypeChange("math")}
             className={`
               flex-1 flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all
-              ${tab === "screenshot"
+              ${testType === "math"
                 ? "bg-white text-[#1a365d] shadow-sm dark:bg-card"
                 : "text-muted-foreground hover:text-foreground"
               }
             `}
           >
-            <Camera className="h-4 w-4" />
-            Upload Screenshot
+            <Calculator className="h-4 w-4" />
+            Math
           </button>
           <button
             type="button"
-            onClick={() => setTab("manual")}
+            onClick={() => handleTestTypeChange("rw")}
             className={`
               flex-1 flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all
-              ${tab === "manual"
+              ${testType === "rw"
                 ? "bg-white text-[#1a365d] shadow-sm dark:bg-card"
                 : "text-muted-foreground hover:text-foreground"
               }
             `}
           >
-            <BookOpen className="h-4 w-4" />
-            Choose Topic
+            <FileText className="h-4 w-4" />
+            Reading &amp; Writing
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Screenshot Tab */}
-          {tab === "screenshot" && (
-            <div className="space-y-6">
-              <ScreenshotUpload
-                onAnalysisComplete={handleAnalysisComplete}
-                onMultiAnalysisComplete={handleMultiAnalysisComplete}
-                multiEnabled={multiEnabled}
-                maxScreenshots={maxScreenshots}
-              />
+        {/* Math: Screenshot / Manual Tab Switcher */}
+        {testType === "math" && (
+          <div className="flex rounded-lg bg-muted p-1 mb-6">
+            <button
+              type="button"
+              onClick={() => setTab("screenshot")}
+              className={`
+                flex-1 flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all
+                ${tab === "screenshot"
+                  ? "bg-white text-[#1a365d] shadow-sm dark:bg-card"
+                  : "text-muted-foreground hover:text-foreground"
+                }
+              `}
+            >
+              <Camera className="h-4 w-4" />
+              Upload Screenshot
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("manual")}
+              className={`
+                flex-1 flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all
+                ${tab === "manual"
+                  ? "bg-white text-[#1a365d] shadow-sm dark:bg-card"
+                  : "text-muted-foreground hover:text-foreground"
+                }
+              `}
+            >
+              <BookOpen className="h-4 w-4" />
+              Choose Topic
+            </button>
+          </div>
+        )}
 
-              {screenshotDetected && category && subcategory && (
-                <div className="space-y-4 p-4 rounded-lg bg-[#1a365d]/5 border border-[#1a365d]/10">
-                  {multiTopics.length > 1 ? (
-                    <>
-                      <p className="text-sm font-medium text-[#1a365d]">
-                        🎯 {multiTopics.length} topics detected — generating a mixed-topic worksheet:
-                      </p>
-                      <ul className="space-y-1 text-sm text-muted-foreground ml-4">
-                        {multiTopics.map((t, i) => (
-                          <li key={i} className="flex items-center gap-2">
-                            <span className="text-[#1a365d] font-medium">•</span>
-                            {getSubcategoryName(t.category, t.subcategory)}
-                          </li>
-                        ))}
-                      </ul>
-                      <DifficultySelector value={difficulty} onChange={setDifficulty} />
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm font-medium text-[#1a365d]">
-                        Detected topic — adjust if needed:
-                      </p>
-                      <CategorySelector
-                        category={category}
-                        subcategory={subcategory}
-                        onCategoryChange={handleCategoryChange}
-                        onSubcategoryChange={setSubcategory}
-                      />
-                      <DifficultySelector value={difficulty} onChange={setDifficulty} />
-                    </>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Math Section */}
+          {testType === "math" && (
+            <>
+              {/* Screenshot Tab */}
+              {tab === "screenshot" && (
+                <div className="space-y-6">
+                  <ScreenshotUpload
+                    onAnalysisComplete={handleAnalysisComplete}
+                    onMultiAnalysisComplete={handleMultiAnalysisComplete}
+                    multiEnabled={multiEnabled}
+                    maxScreenshots={maxScreenshots}
+                  />
+
+                  {screenshotDetected && category && subcategory && (
+                    <div className="space-y-4 p-4 rounded-lg bg-[#1a365d]/5 border border-[#1a365d]/10">
+                      {multiTopics.length > 1 ? (
+                        <>
+                          <p className="text-sm font-medium text-[#1a365d]">
+                            🎯 {multiTopics.length} topics detected — generating a mixed-topic worksheet:
+                          </p>
+                          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+                            {multiTopics.map((t, i) => (
+                              <li key={i} className="flex items-center gap-2">
+                                <span className="text-[#1a365d] font-medium">•</span>
+                                {getSubcategoryName(t.category, t.subcategory)}
+                              </li>
+                            ))}
+                          </ul>
+                          <DifficultySelector value={difficulty} onChange={setDifficulty} />
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-sm font-medium text-[#1a365d]">
+                            Detected topic — adjust if needed:
+                          </p>
+                          <CategorySelector
+                            category={category}
+                            subcategory={subcategory}
+                            onCategoryChange={handleCategoryChange}
+                            onSubcategoryChange={setSubcategory}
+                          />
+                          <DifficultySelector value={difficulty} onChange={setDifficulty} />
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
-            </div>
+
+              {/* Manual Tab */}
+              {tab === "manual" && (
+                <div className="space-y-6">
+                  <CategorySelector
+                    category={category}
+                    subcategory={subcategory}
+                    onCategoryChange={handleCategoryChange}
+                    onSubcategoryChange={setSubcategory}
+                  />
+                  <DifficultySelector value={difficulty} onChange={setDifficulty} />
+                </div>
+              )}
+            </>
           )}
 
-          {/* Manual Tab */}
-          {tab === "manual" && (
+          {/* R/W Section */}
+          {testType === "rw" && (
             <div className="space-y-6">
-              <CategorySelector
+              <RWCategorySelector
                 category={category}
                 subcategory={subcategory}
                 onCategoryChange={handleCategoryChange}
@@ -404,17 +480,25 @@ export function WorksheetForm() {
           )}
 
           {/* Shared: Question Count */}
-          {(tab === "manual" || screenshotDetected) && (
+          {(testType === "rw" || tab === "manual" || screenshotDetected) && (
             <QuestionCountSelector value={questionCount} onChange={setQuestionCount} />
           )}
 
-          {/* Problem Modifiers */}
-          {(tab === "manual" || screenshotDetected) && (
-            <ProblemModifiersSelector
-              value={modifiers}
-              onChange={setModifiers}
-              disabled={userTier === "free"}
-            />
+          {/* Problem Modifiers (Math or R/W) */}
+          {(testType === "rw" || tab === "manual" || screenshotDetected) && (
+            testType === "rw" ? (
+              <RWModifiersSelector
+                value={rwModifiers}
+                onChange={setRwModifiers}
+                disabled={userTier === "free"}
+              />
+            ) : (
+              <ProblemModifiersSelector
+                value={modifiers}
+                onChange={setModifiers}
+                disabled={userTier === "free"}
+              />
+            )
           )}
 
           {/* Error Display */}
@@ -596,6 +680,8 @@ export function WorksheetForm() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Generating your worksheet...
               </>
+            ) : testType === "rw" ? (
+              "Generate R/W Worksheet"
             ) : multiTopics.length > 1 ? (
               "Generate Mixed-Topic Worksheet"
             ) : (
