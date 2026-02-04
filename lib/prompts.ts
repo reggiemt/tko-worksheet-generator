@@ -189,8 +189,7 @@ CRITICAL RULES:
 4. For grid-in problems, choices should be null and isGridIn should be true
 5. Include 1-2 grid-in problems per worksheet
 6. visualCode should be null (not an empty string) when hasVisual is false
-7. You MUST include visuals (hasVisual=true with template JSON in visualCode) for ~30% of problems. For geometry topics, at LEAST 40% of problems should have visuals. Use the template system — never raw TikZ.
-8. visualCode must be a JSON STRING containing a template object like: {"template":"right_triangle","params":{...}}. It is a string field, so escape it properly.`;
+7. When a problem benefits from a diagram (geometry, coordinate planes, data), set hasVisual=true and provide visualCode as a template JSON string like: {"template":"right_triangle","params":{...}}. Never use raw TikZ.`;
 
 export function buildUserPrompt(
   category: string,
