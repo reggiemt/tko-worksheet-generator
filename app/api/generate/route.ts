@@ -280,10 +280,13 @@ export async function POST(request: NextRequest) {
           });
 
           console.log("Compiling LaTeX to PDF...");
-          const worksheetPdf = await compileLaTeX(worksheetLatex, { additionalResources });
-          const answerKeyPdf = answerKeyLatex
-            ? await compileLaTeX(answerKeyLatex, { additionalResources })
-            : null;
+          // Compile worksheet + answer key in parallel for speed
+          const [worksheetPdf, answerKeyPdf] = await Promise.all([
+            compileLaTeX(worksheetLatex, { additionalResources }),
+            answerKeyLatex
+              ? compileLaTeX(answerKeyLatex, { additionalResources })
+              : Promise.resolve(null),
+          ]);
 
           // 10. Increment usage
           if (userId && tier !== "free") {

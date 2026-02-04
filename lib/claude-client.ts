@@ -339,8 +339,9 @@ Solve each problem independently. For each, give your answer and brief work.
 Output ONLY valid JSON (no markdown fences): [{"number": 1, "answer": "B", "brief_work": "..."}, ...]`;
 
   try {
+    // Use Haiku for verification — faster and cheaper, still accurate for checking math
     const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-3-5-haiku-20241022",
       max_tokens: 4000,
       messages: [{ role: "user", content: verificationPrompt }],
     });
