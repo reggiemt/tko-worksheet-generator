@@ -212,6 +212,7 @@ export function WorksheetForm() {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
+        let receivedComplete = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -229,6 +230,7 @@ export function WorksheetForm() {
                 setProgressMessage(event.message);
                 setProgressPercent(event.percent);
               } else if (event.type === "complete") {
+                receivedComplete = true;
                 setResult(event.data);
                 setUsageRefreshKey((k) => k + 1);
               } else if (event.type === "error") {
@@ -242,6 +244,13 @@ export function WorksheetForm() {
               console.warn("Failed to parse stream event:", line);
             }
           }
+        }
+
+        // Stream ended without complete or error — server crashed/timed out
+        if (!receivedComplete) {
+          throw new Error(
+            "Generation was interrupted — the server may have timed out. Try fewer questions or an easier difficulty."
+          );
         }
       } else if (contentType.includes("application/json")) {
         // Fallback: handle regular JSON response (validation errors)
