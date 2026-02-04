@@ -87,7 +87,7 @@ The document preamble already includes: amsmath, amssymb, tikz, pgfplots (compat
 2. **Labels must be readable**: Minimum font \\\\small. No overlapping labels.
 3. **Consistent style**: thick for primary lines, dashed for construction/hidden lines.
 4. **Colors**: blue for primary, red for secondary, black for labels. Avoid yellow/cyan/lime.
-5. **Right angle markers**: Always draw the small square: \\\\draw (x-0.3,y) -- (x-0.3,y+0.3) -- (x,y+0.3);
+5. **Right angle markers**: Use \\\\pic[draw, angle radius=0.3cm] {right angle=A--B--C}; where B is the vertex with the right angle. This works for ANY orientation — TikZ computes the square automatically. NEVER manually draw the square with hardcoded coordinates (breaks on rotated triangles).
 6. **Point markers**: \\\\fill (point) circle (2pt); for solid, \\\\fill[white, draw=black, thick] (point) circle (3pt); for open circles.
 
 ### Coordinate Planes (pgfplots)
@@ -97,19 +97,21 @@ The document preamble already includes: amsmath, amssymb, tikz, pgfplots (compat
 - Mark key points (intercepts, vertex) with filled circles
 
 ### Triangles
-- Always include right angle marker on right triangles
+- Right angle marker: \\\\pic[draw, angle radius=0.3cm] {right angle=A--B--C}; (B = right angle vertex, auto-oriented)
 - Use scale=0.5 to 0.9, label vertices with uppercase letters
-- Side labels at midpoints using $(A)!0.5!(B)$ calc syntax
+- Side labels: use \\\\node[midway, below] on the draw path, e.g.: \\\\draw (A) -- node[midway, below] {$6$} (B);
+- Do NOT manually compute midpoint coordinates for labels — use midway
 
 ### Parallel Lines and Transversals
 - Label parallel lines with lowercase letters
 - Transversal extends beyond both lines
-- Angle arcs at intersections with correct angular positions
+- Use \\\\coordinate (I) at (intersection of A--B and C--D); to find intersection points — do NOT manually compute
+- Use \\\\pic {angle=...} at intersections for angle arcs
 
 ### Circles
-- Use angular positions measured counterclockwise from positive x-axis
-- Mark central/inscribed angles with small arcs near vertex
-- Highlight arcs with very thick style
+- Place points on circle using polar coordinates: \\\\coordinate (A) at (30:2cm); (angle:radius)
+- Mark central/inscribed angles with \\\\pic {angle=A--O--B}; — NOT manual arcs
+- Highlight arcs (major/minor) with: \\\\draw[very thick, red] (30:2cm) arc (30:150:2cm); — this is the ONE case where manual arc is OK (highlighting part of a circle, not marking an angle)
 
 ### ARC AND ANGLE RULES (CRITICAL — USE pic SYNTAX)
 **DO NOT manually calculate arc start/end angles.** You will get them wrong. Instead, use TikZ's built-in \\\\pic angle syntax which automatically computes the correct arc from point coordinates.
@@ -147,8 +149,8 @@ The \\\\pic syntax takes three points: \\\\pic {angle=B--A--C} draws an arc at v
     \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$b$"] {angle=T2--I2--Q2};
 \\\\end{tikzpicture}
 
-**Example — Right angle marker (still use draw for the square):**
-\\\\draw (B) ++(0:0.3cm) -- ++(90:0.3cm) -- ++(180:0.3cm);
+**Example — Right angle marker (auto-oriented):**
+\\\\pic[draw, angle radius=0.3cm] {right angle=A--B--C};  % B = vertex with 90°
 
 **ONLY use manual arc (draw...arc) for highlighted circle arcs** (major/minor arcs on circles), NOT for angle markers. For angle markers, ALWAYS use \\\\pic {angle=...}.
 
