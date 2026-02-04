@@ -24,6 +24,10 @@ async function tryCompileOwn(
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (LATEX_API_KEY) headers["x-api-key"] = LATEX_API_KEY;
 
+    // 60s timeout to handle Fly.io cold starts (machine suspend → resume can take 5-10s)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+
     const response = await fetch(`${LATEX_SERVICE_URL}/compile`, {
       method: "POST",
       headers,
@@ -31,7 +35,9 @@ async function tryCompileOwn(
         content: latexContent,
         resources: additionalResources?.map((r) => ({ path: r.path, file: r.file })),
       }),
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
