@@ -84,3 +84,23 @@ export interface RateLimitResult {
   remaining: number;
   reset: number;
 }
+
+// Streaming progress events for worksheet generation
+export interface ProgressEvent {
+  type: "progress";
+  step: string;
+  message: string;
+  percent: number;
+}
+
+export interface CompleteEvent {
+  type: "complete";
+  data: GenerateResponse;
+}
+
+export interface ErrorEvent {
+  type: "error";
+  error: string;
+}
+
+export type GenerateStreamEvent = ProgressEvent | CompleteEvent | ErrorEvent;

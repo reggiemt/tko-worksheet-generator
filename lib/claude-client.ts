@@ -358,6 +358,92 @@ Output ONLY valid JSON (no markdown fences): [{"number": 1, "answer": "B", "brie
   }
 }
 
+// ── Targeted regeneration of failed problems ────────────────────────
+
+/**
+ * Regenerate only the specific problems that failed verification,
+ * instead of regenerating the entire worksheet.
+ */
+export async function regenerateFailedProblems(
+  worksheet: GeneratedWorksheet,
+  failedNumbers: number[],
+  params: GenerateParams
+): Promise<GeneratedWorksheet> {
+  const client = getClient();
+
+  const failedProblems = worksheet.problems.filter((p) => failedNumbers.includes(p.number));
+
+  const problemDescriptions = failedProblems.map((p) => {
+    let desc = `Problem ${p.number}: ${p.content}`;
+    if (p.choices) {
+      desc += `\nA) ${p.choices.A}\nB) ${p.choices.B}\nC) ${p.choices.C}\nD) ${p.choices.D}`;
+    }
+    if (p.isGridIn) desc += "\n(Grid-in)";
+    return desc;
+  });
+
+  const modifierInstructions: string[] = [];
+  if (params.modifiers?.includeFractions) modifierInstructions.push("Include fractional values");
+  if (params.modifiers?.includeUnknownConstants) modifierInstructions.push("Include unknown constants (k, a, c)");
+  if (params.modifiers?.noDesmos) modifierInstructions.push("Problems must be solvable without a graphing calculator");
+  if (params.modifiers?.wordProblemsOnly) modifierInstructions.push("All problems must be word problems");
+  if (params.modifiers?.gridInOnly) modifierInstructions.push("All problems must be grid-in (no multiple choice)");
+
+  const prompt = `The following SAT math problems had incorrect answers. Generate REPLACEMENT problems for ONLY these problem numbers. Keep the same topic (${params.category}/${params.subcategory}), difficulty (${params.difficulty}), and format.
+
+IMPORTANT: Use the Reverse Construction Method — start with a clean answer, then build the problem backward. Verify each answer by solving forward.
+
+${modifierInstructions.length > 0 ? `Modifiers: ${modifierInstructions.join(". ")}.\n` : ""}
+Problems to replace:
+${problemDescriptions.join("\n\n")}
+
+Generate ${failedNumbers.length} NEW replacement problems with these EXACT problem numbers: ${failedNumbers.join(", ")}.
+
+Return ONLY valid JSON (no markdown fences):
+{
+  "problems": [{"number": N, "content": "...", "choices": {"A": "...", "B": "...", "C": "...", "D": "..."}, "isGridIn": false, "hasVisual": false}],
+  "answers": [{"number": N, "correctAnswer": "B", "solution": "Step-by-step..."}]
+}`;
+
+  const response = await client.messages.create({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 4000,
+    system: SYSTEM_PROMPT,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const content = response.content[0];
+  if (content.type !== "text") {
+    throw new Error("Unexpected response type from Claude");
+  }
+
+  let jsonText = content.text.trim();
+  if (jsonText.startsWith("```json")) jsonText = jsonText.slice(7);
+  else if (jsonText.startsWith("```")) jsonText = jsonText.slice(3);
+  if (jsonText.endsWith("```")) jsonText = jsonText.slice(0, -3);
+  jsonText = jsonText.trim();
+
+  const parsed = JSON.parse(jsonText);
+  const newProblems: Problem[] = parsed.problems || [];
+  const newAnswers: Answer[] = parsed.answers || [];
+
+  // Merge: replace failed problems/answers with new ones
+  const replacedProblems = worksheet.problems.map((p) => {
+    const replacement = newProblems.find((np) => np.number === p.number);
+    return replacement || p;
+  });
+  const replacedAnswers = worksheet.answers.map((a) => {
+    const replacement = newAnswers.find((na) => na.number === a.number);
+    return replacement || a;
+  });
+
+  return {
+    ...worksheet,
+    problems: replacedProblems,
+    answers: replacedAnswers,
+  };
+}
+
 /** Normalise an answer for comparison (handles numeric grid-in variations). */
 function normalizeAnswer(ans: string): string {
   const s = ans.trim().toUpperCase();

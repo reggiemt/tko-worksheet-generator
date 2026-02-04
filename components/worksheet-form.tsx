@@ -8,7 +8,7 @@ import { ScreenshotUpload, type AnalysisResult } from "./screenshot-upload";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Loader2, Download, AlertCircle, Camera, BookOpen, Lock, Mail, CheckCircle } from "lucide-react";
-import type { Difficulty, QuestionCount, GenerateResponse, ProblemModifiers } from "@/lib/types";
+import type { Difficulty, QuestionCount, GenerateResponse, ProblemModifiers, GenerateStreamEvent } from "@/lib/types";
 import { DEFAULT_MODIFIERS } from "@/lib/types";
 import { getSubcategoryName } from "@/lib/categories";
 import { ProblemModifiersSelector } from "./problem-modifiers";
@@ -38,6 +38,11 @@ export function WorksheetForm() {
   const [screenshotDetected, setScreenshotDetected] = useState(false);
   const [usageRefreshKey, setUsageRefreshKey] = useState(0);
   const [limitReached, setLimitReached] = useState(false);
+
+  // Generation progress state
+  const [progressStep, setProgressStep] = useState<string>("");
+  const [progressMessage, setProgressMessage] = useState<string>("");
+  const [progressPercent, setProgressPercent] = useState<number>(0);
 
   // Email unlock state
   const [unlockEmail, setUnlockEmail] = useState("");
@@ -172,6 +177,9 @@ export function WorksheetForm() {
     setIsGenerating(true);
     setError(null);
     setResult(null);
+    setProgressStep("");
+    setProgressMessage("Starting...");
+    setProgressPercent(5);
     setUnlockEmail("");
     setUnlockError(null);
     setUnlockSuccess(false);
@@ -197,9 +205,54 @@ export function WorksheetForm() {
         body: JSON.stringify(body),
       });
 
-      // Handle non-JSON responses (e.g. Vercel timeout/crash returns plain text)
       const contentType = response.headers.get("content-type") || "";
-      if (!contentType.includes("application/json")) {
+
+      // Handle streaming NDJSON response (progress events)
+      if (contentType.includes("application/x-ndjson") && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const event: GenerateStreamEvent = JSON.parse(line);
+              if (event.type === "progress") {
+                setProgressStep(event.step);
+                setProgressMessage(event.message);
+                setProgressPercent(event.percent);
+              } else if (event.type === "complete") {
+                setResult(event.data);
+                setUsageRefreshKey((k) => k + 1);
+              } else if (event.type === "error") {
+                throw new Error(event.error);
+              }
+            } catch (parseErr) {
+              // If it's a re-thrown error from above, propagate it
+              if (parseErr instanceof Error && !parseErr.message.includes("JSON")) {
+                throw parseErr;
+              }
+              console.warn("Failed to parse stream event:", line);
+            }
+          }
+        }
+      } else if (contentType.includes("application/json")) {
+        // Fallback: handle regular JSON response (validation errors)
+        const data: GenerateResponse = await response.json();
+        if (!data.success) {
+          throw new Error(data.error || "Generation failed");
+        }
+        setResult(data);
+        setUsageRefreshKey((k) => k + 1);
+      } else {
+        // Non-JSON, non-stream: Vercel platform error
         const text = await response.text();
         throw new Error(
           response.status === 504 || text.toLowerCase().includes("timeout")
@@ -207,20 +260,13 @@ export function WorksheetForm() {
             : "Server error — please try again."
         );
       }
-
-      const data: GenerateResponse = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error || "Generation failed");
-      }
-
-      setResult(data);
-      // Refresh usage counter after successful generation
-      setUsageRefreshKey((k) => k + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
     } finally {
       setIsGenerating(false);
+      setProgressStep("");
+      setProgressMessage("");
+      setProgressPercent(0);
     }
   };
 
@@ -505,6 +551,25 @@ export function WorksheetForm() {
                   Answer keys on paid plans
                 </a>
               )}
+            </div>
+          )}
+
+          {/* Progress Bar */}
+          {isGenerating && progressMessage && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#1a365d] font-medium flex items-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {progressMessage}
+                </span>
+                <span className="text-muted-foreground tabular-nums">{progressPercent}%</span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className="bg-[#1a365d] h-2.5 rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
             </div>
           )}
 
