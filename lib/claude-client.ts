@@ -197,6 +197,7 @@ interface ParsedResponse {
 function parseClaudeResponse(text: string): ParsedResponse {
   let jsonText = text.trim();
 
+  // Strip markdown fences
   if (jsonText.startsWith("```json")) {
     jsonText = jsonText.slice(7);
   } else if (jsonText.startsWith("```")) {
@@ -207,8 +208,37 @@ function parseClaudeResponse(text: string): ParsedResponse {
   }
   jsonText = jsonText.trim();
 
+  // If direct parse fails, try to extract JSON object from the text
+  let parsed: Record<string, unknown>;
   try {
-    const parsed = JSON.parse(jsonText);
+    parsed = JSON.parse(jsonText);
+  } catch {
+    // Try to find a JSON object in the response (Claude sometimes adds explanation text)
+    const jsonMatch = text.match(/\{[\s\S]*"problems"\s*:\s*\[[\s\S]*"answers"\s*:\s*\[[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch {
+        // Try fixing common JSON issues: trailing commas, unescaped newlines in strings
+        let fixedJson = jsonMatch[0]
+          .replace(/,\s*([}\]])/g, "$1")  // trailing commas
+          .replace(/[\r\n]+/g, " ");       // newlines in strings
+        try {
+          parsed = JSON.parse(fixedJson);
+        } catch (finalErr) {
+          console.error("Failed to parse Claude response after all attempts:", text.substring(0, 500));
+          throw new Error(
+            `Failed to parse AI response: ${finalErr instanceof Error ? finalErr.message : "Invalid JSON"}`
+          );
+        }
+      }
+    } else {
+      console.error("No JSON object found in Claude response:", text.substring(0, 500));
+      throw new Error("Failed to parse AI response: No valid JSON found in response");
+    }
+  }
+
+  try {
 
     if (!Array.isArray(parsed.problems) || !Array.isArray(parsed.answers)) {
       throw new Error("Invalid response structure: missing problems or answers array");
