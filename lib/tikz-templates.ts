@@ -944,15 +944,19 @@ export function resolveVisualCode(visualCode: string): string {
   try {
     const parsed = JSON.parse(visualCode);
     if (parsed && typeof parsed === "object" && parsed.template) {
+      console.log(`[TIKZ] Rendering template "${parsed.template}" with params: ${JSON.stringify(parsed.params).substring(0, 150)}`);
       const result = renderTemplate(parsed.template, parsed.params || {});
+      console.log(`[TIKZ] Template "${parsed.template}" rendered OK (${result.length} chars)`);
       return result;
     }
-  } catch {
+    console.warn(`[TIKZ] Parsed JSON but no "template" field found: ${JSON.stringify(parsed).substring(0, 100)}`);
+  } catch (e) {
     // Not JSON — reject raw TikZ
+    console.warn(`[TIKZ] Failed to parse visualCode as JSON: ${e instanceof Error ? e.message : e}`);
   }
 
   // Raw TikZ is NOT allowed — it causes compilation failures on the server.
   // Claude must use the template system (JSON with template name + params).
-  console.warn("Visual code is raw TikZ (not template JSON) — rejecting to prevent compilation failures:", visualCode.substring(0, 100));
+  console.warn(`[TIKZ] Rejecting raw TikZ (not template JSON): ${visualCode.substring(0, 150)}`);
   return "\\textit{[Figure]}";
 }

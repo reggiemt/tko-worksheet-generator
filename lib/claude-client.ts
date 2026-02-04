@@ -112,6 +112,15 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
   // Parse JSON response
   const parsed = parseClaudeResponse(fullJson);
 
+  // Diagnostic: log visual stats
+  const visualProblems = parsed.problems.filter(p => p.hasVisual);
+  const withCode = visualProblems.filter(p => p.visualCode);
+  console.log(`[GENERATE] Visuals: ${visualProblems.length}/${parsed.problems.length} problems have hasVisual=true, ${withCode.length} have visualCode set`);
+  for (const p of visualProblems) {
+    const codePreview = p.visualCode ? p.visualCode.substring(0, 80) : "(null)";
+    console.log(`[GENERATE]   Problem #${p.number}: visualCode = ${codePreview}...`);
+  }
+
   return {
     problems: parsed.problems,
     answers: parsed.answers,

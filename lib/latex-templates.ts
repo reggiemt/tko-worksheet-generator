@@ -54,12 +54,17 @@ function buildProblemLatex(problem: Problem): string {
     try {
       const tikzCode = resolveVisualCode(problem.visualCode);
       if (tikzCode && !tikzCode.includes("[Figure]")) {
+        console.log(`[LATEX] Problem #${problem.number}: Including visual (${tikzCode.length} chars of TikZ)`);
         latex += `\n\\begin{center}\n${tikzCode}\n\\end{center}\n`;
+      } else {
+        console.warn(`[LATEX] Problem #${problem.number}: Visual resolved to [Figure] placeholder — skipping`);
       }
     } catch (err) {
-      console.warn(`Visual code rendering failed for problem ${problem.number}:`, err);
+      console.warn(`[LATEX] Problem #${problem.number}: Visual rendering failed:`, err);
       // Skip the figure rather than crash
     }
+  } else if (problem.hasVisual && !problem.visualCode) {
+    console.warn(`[LATEX] Problem #${problem.number}: hasVisual=true but visualCode is null/empty`);
   }
 
   if (problem.isGridIn) {
