@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Crown, Zap, User } from "lucide-react";
+import { Crown, Zap, User, BarChart3 } from "lucide-react";
 
 interface UsageData {
   tier: string;
@@ -72,6 +72,7 @@ export function NavUsage() {
   }
 
   const isLow = !isUnlimited && usage.remaining <= 1;
+  const showAnalytics = ["pro", "enterprise", "unlimited"].includes(tier);
 
   return (
     <div className="hidden sm:flex items-center gap-1.5 text-xs">
@@ -89,6 +90,16 @@ export function NavUsage() {
         <span className={`font-semibold ${tierColor}`}>
           · {tierLabel}
         </span>
+      )}
+      {showAnalytics && (
+        <Link
+          href="/dashboard"
+          className="ml-2 flex items-center gap-1 text-[#1a365d] hover:text-[#e53e3e] font-medium transition-colors"
+          title="Usage Analytics"
+        >
+          <BarChart3 className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">Analytics</span>
+        </Link>
       )}
       {isFree && (
         <Link

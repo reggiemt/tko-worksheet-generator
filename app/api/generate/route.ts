@@ -176,6 +176,34 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       await incrementFreeUsage(ip);
     }
 
+    // 9.5 Track analytics stats for dashboard
+    try {
+      const redis = getRedisClient();
+      if (redis && userEmail) {
+        const now = new Date();
+        const month = now.toISOString().slice(0, 7); // YYYY-MM
+        const day = now.toISOString().slice(0, 10); // YYYY-MM-DD
+        const topicKey = category ? `${category}.${subcategory}` : "unknown";
+
+        await Promise.all([
+          redis.hincrby(`worksheet:stats:${userEmail}:topics:${month}`, topicKey, 1),
+          redis.hincrby(`worksheet:stats:${userEmail}:difficulty:${month}`, difficulty, 1),
+          redis.incr(`worksheet:stats:${userEmail}:daily:${day}`),
+        ]);
+
+        // Set TTL on stats keys (90 days = 7776000 seconds)
+        const TTL_90_DAYS = 7776000;
+        await Promise.all([
+          redis.expire(`worksheet:stats:${userEmail}:topics:${month}`, TTL_90_DAYS),
+          redis.expire(`worksheet:stats:${userEmail}:difficulty:${month}`, TTL_90_DAYS),
+          redis.expire(`worksheet:stats:${userEmail}:daily:${day}`, TTL_90_DAYS),
+        ]);
+      }
+    } catch (statsError) {
+      // Don't fail the request if stats tracking fails
+      console.error("Analytics stats tracking error:", statsError);
+    }
+
     // 10. For free tier, store worksheet data in Redis for email-gated unlock
     let worksheetId: string | undefined;
     if (isFree) {
