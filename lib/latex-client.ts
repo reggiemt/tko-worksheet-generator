@@ -126,6 +126,7 @@ export async function compileLaTeX(
 
   const attempts: { name: string; transform: (latex: string) => string }[] = [
     { name: "full document", transform: (l) => l },
+    { name: "full document (retry)", transform: (l) => l }, // Retry same content for transient 500s
     { name: "stripped TikZ", transform: stripTikz },
     { name: "aggressive sanitization", transform: sanitizeForRetry },
     {
@@ -145,6 +146,12 @@ export async function compileLaTeX(
 
   for (let i = 0; i < attempts.length; i++) {
     const { name, transform } = attempts[i];
+    
+    // Small delay before retries to help with transient server errors
+    if (i > 0) {
+      await new Promise((r) => setTimeout(r, 1000 * i));
+    }
+    
     console.log(`LaTeX compile: attempt ${i + 1} (${name})`);
     const transformed = transform(latexContent);
     const result = await tryCompile(transformed, compiler, additionalResources);
