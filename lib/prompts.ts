@@ -111,16 +111,52 @@ The document preamble already includes: amsmath, amssymb, tikz, pgfplots (compat
 - Mark central/inscribed angles with small arcs near vertex
 - Highlight arcs with very thick style
 
-### ARC AND ANGLE RULES (CRITICAL)
-Every arc's start angle and end angle must correspond to ACTUAL angular positions of the rays — NEVER default to 0°.
+### ARC AND ANGLE RULES (CRITICAL — USE pic SYNTAX)
+**DO NOT manually calculate arc start/end angles.** You will get them wrong. Instead, use TikZ's built-in \\\\pic angle syntax which automatically computes the correct arc from point coordinates.
 
-1. **Angle markers**: start angle = angular position of one ray, end angle = angular position of the other ray. Verify |end - start| = intended angle measure.
-2. **Highlighted arcs**: For counterclockwise, ensure end > start. For clockwise, ensure end < start. Add 360° if needed.
-3. **Coordinate must match start angle**: The +(angle:radius) MUST use the same angle as start angle.
-4. **Verify every arc**: Check sweep direction, sweep magnitude = intended measure, coordinate matches start angle.
+**PREFERRED METHOD — pic {angle=...}:**
+The \\\\pic syntax takes three points: \\\\pic {angle=B--A--C} draws an arc at vertex A from ray AB to ray AC. TikZ calculates angles automatically.
 
-WRONG: \\\\draw (O) +(0:0.5) arc[start angle=0, end angle=110, radius=0.5]; (starts at x-axis instead of actual ray)
-RIGHT: \\\\draw (O) +(200:0.5) arc[start angle=200, end angle=310, radius=0.5]; (uses actual ray positions)
+\\\\pic[draw, angle radius=0.5cm] {angle=B--A--C};                    % plain arc
+\\\\pic[draw, angle radius=0.5cm, "$65°$"] {angle=B--A--C};            % with label
+\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$x$"] {angle=B--A--C};  % label further out
+
+**Example — Triangle with angle labels:**
+\\\\begin{tikzpicture}[scale=0.8]
+    \\\\coordinate[label=above:$C$] (C) at (2,3);
+    \\\\coordinate[label=below left:$A$] (A) at (0,0);
+    \\\\coordinate[label=below right:$B$] (B) at (4,0);
+    \\\\draw[thick] (A) -- (B) -- (C) -- cycle;
+    \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$65°$"] {angle=B--A--C};
+    \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$48°$"] {angle=C--B--A};
+\\\\end{tikzpicture}
+
+**Example — Parallel lines with angle labels:**
+\\\\begin{tikzpicture}[scale=0.8]
+    \\\\coordinate (P1) at (0,2);   \\\\coordinate (P2) at (5,2);
+    \\\\coordinate (Q1) at (0,0);   \\\\coordinate (Q2) at (5,0);
+    \\\\coordinate (T1) at (1.5,3.5);  \\\\coordinate (T2) at (3.5,-1.5);
+    \\\\draw[thick] (P1) -- (P2) node[right] {$p$};
+    \\\\draw[thick] (Q1) -- (Q2) node[right] {$q$};
+    \\\\draw[thick] (T1) -- (T2);
+    % Find intersections
+    \\\\coordinate (I1) at (intersection of P1--P2 and T1--T2);
+    \\\\coordinate (I2) at (intersection of Q1--Q2 and T1--T2);
+    % Angle arcs using pic — TikZ computes angles automatically
+    \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$a$"] {angle=P2--I1--T1};
+    \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$b$"] {angle=T2--I2--Q2};
+\\\\end{tikzpicture}
+
+**Example — Right angle marker (still use draw for the square):**
+\\\\draw (B) ++(0:0.3cm) -- ++(90:0.3cm) -- ++(180:0.3cm);
+
+**ONLY use manual arc (draw...arc) for highlighted circle arcs** (major/minor arcs on circles), NOT for angle markers. For angle markers, ALWAYS use \\\\pic {angle=...}.
+
+**WRONG** (manual arc — will have wrong angles):
+\\\\draw (A) +(0:0.5) arc[start angle=0, end angle=65, radius=0.5];
+
+**RIGHT** (pic — TikZ computes automatically):
+\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$65°$"] {angle=B--A--C};
 
 ### 3D Solids (Cones, Cylinders, Prisms)
 - Base ellipses: y_radius ≈ 0.25 × x_radius for perspective
@@ -148,7 +184,7 @@ You MUST output valid JSON in exactly this format:
       },
       "isGridIn": false,
       "hasVisual": true,
-      "visualCode": "\\\\begin{tikzpicture}[scale=0.8]\\n\\\\draw[thick] (0,2) -- (6,2) node[right] {$p$};\\n\\\\draw[thick] (0,0) -- (6,0) node[right] {$q$};\\n\\\\draw[thick] (1.5,3) -- (4.5,-1);\\n\\\\draw (2.4,2) arc (180:225:0.5);\\n\\\\node at (1.9,1.6) {$x°$};\\n\\\\draw (3.6,0) arc (0:45:0.5);\\n\\\\node at (4.1,0.4) {$y°$};\\n\\\\end{tikzpicture}"
+      "visualCode": "\\\\begin{tikzpicture}[scale=0.8]\\n\\\\coordinate (P1) at (0,2); \\\\coordinate (P2) at (6,2);\\n\\\\coordinate (Q1) at (0,0); \\\\coordinate (Q2) at (6,0);\\n\\\\coordinate (T1) at (1.5,3); \\\\coordinate (T2) at (4.5,-1);\\n\\\\draw[thick] (P1) -- (P2) node[right] {$p$};\\n\\\\draw[thick] (Q1) -- (Q2) node[right] {$q$};\\n\\\\draw[thick] (T1) -- (T2);\\n\\\\coordinate (I1) at (intersection of P1--P2 and T1--T2);\\n\\\\coordinate (I2) at (intersection of Q1--Q2 and T1--T2);\\n\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, \\\"$x°$\\\"] {angle=P2--I1--T1};\\n\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, \\\"$y°$\\\"] {angle=T2--I2--Q2};\\n\\\\end{tikzpicture}"
     },
     {
       "number": 2,
@@ -182,7 +218,7 @@ CRITICAL RULES:
 6. visualCode should be null (not an empty string) when hasVisual is false
 7. When a problem benefits from a diagram, set hasVisual=true and provide the COMPLETE TikZ code in visualCode as a string. The code must be a valid TikZ environment (\\\\begin{tikzpicture}...\\\\end{tikzpicture}) or pgfplots environment. Escape all backslashes as \\\\\\\\ in the JSON string.
 8. NEVER write "in the figure below" or "shown below" in problem text UNLESS you are also setting hasVisual=true AND providing valid TikZ code in visualCode. If you cannot provide a figure, rewrite the problem to be self-contained.
-9. Follow the ARC AND ANGLE RULES exactly — every arc must use actual angular positions, never start from 0° by default.`;
+9. For angle markers, ALWAYS use \\\\pic {angle=B--A--C} syntax (TikZ computes angles automatically). NEVER use manual \\\\draw...arc for angle markers — you WILL get the angles wrong. Only use manual arc for highlighted circle arcs.`;
 
 export function buildUserPrompt(
   category: string,
