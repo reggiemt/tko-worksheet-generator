@@ -197,6 +197,17 @@ export function WorksheetForm() {
         body: JSON.stringify(body),
       });
 
+      // Handle non-JSON responses (e.g. Vercel timeout/crash returns plain text)
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await response.text();
+        throw new Error(
+          response.status === 504 || text.toLowerCase().includes("timeout")
+            ? "Generation timed out — try fewer questions or an easier difficulty."
+            : "Server error — please try again."
+        );
+      }
+
       const data: GenerateResponse = await response.json();
 
       if (!data.success) {
