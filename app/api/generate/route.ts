@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateProblems, verifyProblems, validateAnswerChoices } from "@/lib/claude-client";
 import { compileLaTeX } from "@/lib/latex-client";
+import type { LatexResource } from "@/lib/latex-client";
 import { buildWorksheetLatex, buildAnswerKeyLatex } from "@/lib/latex-templates";
+import type { CustomBranding } from "@/lib/latex-templates";
 import {
   checkFreeRateLimit,
   incrementFreeUsage,
@@ -156,20 +158,57 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       }
     }
 
-    // 7. Build LaTeX documents
+    // 7. Look up custom branding for Enterprise/Unlimited users
+    let customBranding: CustomBranding | undefined;
+    let additionalResources: LatexResource[] | undefined;
+
+    if (userEmail && (tier === "enterprise" || tier === "unlimited")) {
+      const redis = getRedisClient();
+      if (redis) {
+        const [logoData, brandingData] = await Promise.all([
+          redis.get<string>(`worksheet:logo:${userEmail.toLowerCase().trim()}`),
+          redis.get<{ orgName: string; mimeType: string }>(
+            `worksheet:branding:${userEmail.toLowerCase().trim()}`
+          ),
+        ]);
+
+        if (logoData || brandingData?.orgName) {
+          customBranding = {
+            orgName: brandingData?.orgName || undefined,
+            logoBase64: logoData || undefined,
+            logoMimeType: brandingData?.mimeType || undefined,
+          };
+
+          // If there's a logo image, add it as a resource for the LaTeX compiler
+          if (logoData) {
+            additionalResources = [
+              {
+                path: "customlogo.png",
+                file: logoData,
+              },
+            ];
+            console.log("Custom branding: logo + org name included");
+          } else {
+            console.log("Custom branding: org name only");
+          }
+        }
+      }
+    }
+
+    // 8. Build LaTeX documents
     console.log("Building LaTeX documents...");
-    const worksheetLatex = buildWorksheetLatex(worksheet);
+    const worksheetLatex = buildWorksheetLatex(worksheet, customBranding);
 
     // Skip answer key for free tier to save compilation costs
     const isFree = tier === "free";
-    const answerKeyLatex = isFree ? null : buildAnswerKeyLatex(worksheet);
+    const answerKeyLatex = isFree ? null : buildAnswerKeyLatex(worksheet, customBranding);
 
-    // 8. Compile to PDF via LaTeX-on-HTTP
+    // 9. Compile to PDF via LaTeX-on-HTTP
     console.log("Compiling LaTeX to PDF...");
-    const worksheetPdf = await compileLaTeX(worksheetLatex);
-    const answerKeyPdf = answerKeyLatex ? await compileLaTeX(answerKeyLatex) : null;
+    const worksheetPdf = await compileLaTeX(worksheetLatex, { additionalResources });
+    const answerKeyPdf = answerKeyLatex ? await compileLaTeX(answerKeyLatex, { additionalResources }) : null;
 
-    // 9. Increment usage AFTER successful generation
+    // 10. Increment usage AFTER successful generation
     if (userId && tier !== "free") {
       await incrementPaidUsage(userId);
     } else {
@@ -204,7 +243,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       console.error("Analytics stats tracking error:", statsError);
     }
 
-    // 10. For free tier, store worksheet data in Redis for email-gated unlock
+    // 11. For free tier, store worksheet data in Redis for email-gated unlock
     let worksheetId: string | undefined;
     if (isFree) {
       const redis = getRedisClient();
@@ -218,7 +257,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
       }
     }
 
-    // 11. Return base64-encoded PDFs
+    // 12. Return base64-encoded PDFs
     console.log("Generation complete!");
     return NextResponse.json({
       success: true,

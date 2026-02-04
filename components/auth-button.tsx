@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LogIn, LogOut, User } from "lucide-react";
+import { LogIn, LogOut, User, Settings } from "lucide-react";
 
 interface AuthState {
   authenticated: boolean;
@@ -42,6 +42,13 @@ export function AuthButton() {
         <span className="text-xs text-slate-500 hidden sm:block">
           {auth.email}
         </span>
+        <a
+          href="/settings"
+          className="flex items-center gap-1 text-sm text-slate-500 hover:text-[#1a365d] transition-colors"
+          title="Account Settings"
+        >
+          <Settings className="h-4 w-4" />
+        </a>
         <a
           href="/api/auth/signout"
           className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 transition-colors"
