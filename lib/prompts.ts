@@ -117,11 +117,15 @@ The document preamble already includes: amsmath, amssymb, tikz, pgfplots (compat
 **DO NOT manually calculate arc start/end angles.** You will get them wrong. Instead, use TikZ's built-in \\\\pic angle syntax which automatically computes the correct arc from point coordinates.
 
 **PREFERRED METHOD — pic {angle=...}:**
-The \\\\pic syntax takes three points: \\\\pic {angle=B--A--C} draws an arc at vertex A from ray AB to ray AC. TikZ calculates angles automatically.
+The \\\\pic syntax takes three points: \\\\pic {angle=B--A--C} draws an arc at vertex A, sweeping COUNTERCLOCKWISE from ray AB to ray AC. TikZ calculates angles automatically.
 
-\\\\pic[draw, angle radius=0.5cm] {angle=B--A--C};                    % plain arc
-\\\\pic[draw, angle radius=0.5cm, "$65°$"] {angle=B--A--C};            % with label
-\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$x$"] {angle=B--A--C};  % label further out
+**CRITICAL: Point ordering determines which angle is drawn!**
+\\\\pic {angle=B--A--C} sweeps counterclockwise from ray AB to ray AC.
+- If the counterclockwise sweep gives the SMALL angle (acute/obtuse) — CORRECT
+- If it gives the LARGE angle (reflex, >180°) — SWAP the first and last points: use {angle=C--A--B}
+- Rule of thumb: looking from the vertex, if C is counterclockwise from B by the SMALL angle, use {angle=B--A--C}
+
+\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$65°$"] {angle=B--A--C};
 
 **Example — Triangle with angle labels:**
 \\\\begin{tikzpicture}[scale=0.8]
@@ -129,36 +133,39 @@ The \\\\pic syntax takes three points: \\\\pic {angle=B--A--C} draws an arc at v
     \\\\coordinate[label=below left:$A$] (A) at (0,0);
     \\\\coordinate[label=below right:$B$] (B) at (4,0);
     \\\\draw[thick] (A) -- (B) -- (C) -- cycle;
+    % At vertex A: sweep CCW from ray AB (rightward) to ray AC (up-right) = small angle ✓
     \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$65°$"] {angle=B--A--C};
+    % At vertex B: sweep CCW from ray BC (up-left) to ray BA (leftward) = small angle ✓
     \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$48°$"] {angle=C--B--A};
 \\\\end{tikzpicture}
 
 **Example — Parallel lines with angle labels:**
+For parallel lines, use simple coordinates and place angle labels with \\\\node. Do NOT use intersection of — it can cause compilation issues. Instead, calculate intersection points manually from the line geometry:
 \\\\begin{tikzpicture}[scale=0.8]
-    \\\\coordinate (P1) at (0,2);   \\\\coordinate (P2) at (5,2);
-    \\\\coordinate (Q1) at (0,0);   \\\\coordinate (Q2) at (5,0);
-    \\\\coordinate (T1) at (1.5,3.5);  \\\\coordinate (T2) at (3.5,-1.5);
-    \\\\draw[thick] (P1) -- (P2) node[right] {$p$};
-    \\\\draw[thick] (Q1) -- (Q2) node[right] {$q$};
-    \\\\draw[thick] (T1) -- (T2);
-    % Find intersections
-    \\\\coordinate (I1) at (intersection of P1--P2 and T1--T2);
-    \\\\coordinate (I2) at (intersection of Q1--Q2 and T1--T2);
-    % Angle arcs using pic — TikZ computes angles automatically
-    \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$a$"] {angle=P2--I1--T1};
-    \\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$b$"] {angle=T2--I2--Q2};
+    \\\\draw[thick] (0,2) -- (5,2) node[right] {$p$};
+    \\\\draw[thick] (0,0) -- (5,0) node[right] {$q$};
+    \\\\draw[thick] (1.5,3.5) -- (3.5,-1.5);
+    % Place angle labels near the intersections
+    \\\\node at (2.7,2.3) {$x$};
+    \\\\node at (3.1,-0.3) {$y$};
+    % Small arcs near intersections for angle markers
+    \\\\draw (2.5,2) +(20:0.4) arc(20:70:0.4);
+    \\\\draw (3.0,0) +(200:0.4) arc(200:250:0.4);
 \\\\end{tikzpicture}
 
 **Example — Right angle marker (auto-oriented):**
 \\\\pic[draw, angle radius=0.3cm] {right angle=A--B--C};  % B = vertex with 90°
 
-**ONLY use manual arc (draw...arc) for highlighted circle arcs** (major/minor arcs on circles), NOT for angle markers. For angle markers, ALWAYS use \\\\pic {angle=...}.
+**When to use each method:**
+- **Triangles with labeled angles**: Use \\\\pic {angle=...} — coordinates are well-defined, works great
+- **Parallel lines with angle labels**: Use simple \\\\node labels near intersections + small manual arcs. Avoid \\\\pic with intersection coordinates (fragile).
+- **Right angles**: Use \\\\pic {right angle=...} — always works
+- **Circle arcs (highlighting part of a circle)**: Use manual \\\\draw...arc — the one case where manual arc is correct
 
-**WRONG** (manual arc — will have wrong angles):
-\\\\draw (A) +(0:0.5) arc[start angle=0, end angle=65, radius=0.5];
-
-**RIGHT** (pic — TikZ computes automatically):
-\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, "$65°$"] {angle=B--A--C};
+**IMPORTANT — similar triangle labels:**
+When drawing two similar triangles side by side, label them OUTSIDE/BELOW the triangle, NOT inside. Use:
+\\\\node[below] at (barycentric cs:A=1,B=1,C=1) {$\\\\triangle ABC$};  % Below center of triangle
+Or simply: \\\\node at (2,-0.5) {$\\\\triangle ABC$};  % Below the figure
 
 ### 3D Solids (Cones, Cylinders, Prisms)
 - Base ellipses: y_radius ≈ 0.25 × x_radius for perspective
@@ -186,7 +193,7 @@ You MUST output valid JSON in exactly this format:
       },
       "isGridIn": false,
       "hasVisual": true,
-      "visualCode": "\\\\begin{tikzpicture}[scale=0.8]\\n\\\\coordinate (P1) at (0,2); \\\\coordinate (P2) at (6,2);\\n\\\\coordinate (Q1) at (0,0); \\\\coordinate (Q2) at (6,0);\\n\\\\coordinate (T1) at (1.5,3); \\\\coordinate (T2) at (4.5,-1);\\n\\\\draw[thick] (P1) -- (P2) node[right] {$p$};\\n\\\\draw[thick] (Q1) -- (Q2) node[right] {$q$};\\n\\\\draw[thick] (T1) -- (T2);\\n\\\\coordinate (I1) at (intersection of P1--P2 and T1--T2);\\n\\\\coordinate (I2) at (intersection of Q1--Q2 and T1--T2);\\n\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, \\\"$x°$\\\"] {angle=P2--I1--T1};\\n\\\\pic[draw, angle radius=0.5cm, angle eccentricity=1.5, \\\"$y°$\\\"] {angle=T2--I2--Q2};\\n\\\\end{tikzpicture}"
+      "visualCode": "\\\\begin{tikzpicture}[scale=0.8]\\n\\\\draw[thick] (0,2) -- (5,2) node[right] {$p$};\\n\\\\draw[thick] (0,0) -- (5,0) node[right] {$q$};\\n\\\\draw[thick] (1.5,3.5) -- (3.5,-1.5);\\n\\\\node at (2.7,2.3) {$x$};\\n\\\\node at (3.1,-0.3) {$y$};\\n\\\\draw (2.5,2) +(20:0.4) arc(20:70:0.4);\\n\\\\draw (3.0,0) +(200:0.4) arc(200:250:0.4);\\n\\\\end{tikzpicture}"
     },
     {
       "number": 2,

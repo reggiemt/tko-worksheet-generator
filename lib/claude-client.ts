@@ -283,9 +283,10 @@ Output ONLY the fixed code:`,
 
 /**
  * Strip "In the figure below" and similar references when no figure exists.
+ * Capitalizes the first letter of the remaining text.
  */
 function stripFigureReferences(text: string): string {
-  return text
+  let cleaned = text
     .replace(/[Ii]n the figure below,?\s*/g, "")
     .replace(/[Aa]s shown in the figure(?: below)?,?\s*/g, "")
     .replace(/[Tt]he figure (?:below )?shows\s*/g, "")
@@ -293,6 +294,13 @@ function stripFigureReferences(text: string): string {
     .replace(/[Uu]sing the figure below,?\s*/g, "")
     .replace(/[Ss]hown below,?\s*/g, "")
     .replace(/^\s+/, "");
+
+  // Capitalize first letter after stripping
+  if (cleaned.length > 0) {
+    cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  }
+
+  return cleaned;
 }
 
 export interface AnalyzeImageResult {
