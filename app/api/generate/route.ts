@@ -158,14 +158,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
     // 7. Build LaTeX documents
     console.log("Building LaTeX documents...");
     const worksheetLatex = buildWorksheetLatex(worksheet);
-    const answerKeyLatex = buildAnswerKeyLatex(worksheet);
+
+    // Skip answer key for free tier to save compilation costs
+    const isFree = tier === "free";
+    const answerKeyLatex = isFree ? null : buildAnswerKeyLatex(worksheet);
 
     // 8. Compile to PDF via LaTeX-on-HTTP
     console.log("Compiling LaTeX to PDF...");
-    const [worksheetPdf, answerKeyPdf] = await Promise.all([
-      compileLaTeX(worksheetLatex),
-      compileLaTeX(answerKeyLatex),
-    ]);
+    const worksheetPdf = await compileLaTeX(worksheetLatex);
+    const answerKeyPdf = answerKeyLatex ? await compileLaTeX(answerKeyLatex) : null;
 
     // 9. Increment usage AFTER successful generation
     if (userId && tier !== "free") {
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<GenerateR
     return NextResponse.json({
       success: true,
       worksheetPdf: worksheetPdf.toString("base64"),
-      answerKeyPdf: answerKeyPdf.toString("base64"),
+      ...(answerKeyPdf ? { answerKeyPdf: answerKeyPdf.toString("base64") } : {}),
       metadata: worksheet.metadata,
     });
   } catch (error) {

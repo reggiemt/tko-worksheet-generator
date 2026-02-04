@@ -2,6 +2,7 @@
 
 import type { ProblemModifiers } from "@/lib/types";
 import { Label } from "./ui/label";
+import { Lock } from "lucide-react";
 
 interface ModifierOption {
   key: keyof ProblemModifiers;
@@ -46,12 +47,14 @@ const MODIFIER_OPTIONS: ModifierOption[] = [
 interface ProblemModifiersProps {
   value: ProblemModifiers;
   onChange: (modifiers: ProblemModifiers) => void;
+  disabled?: boolean;
 }
 
-export function ProblemModifiersSelector({ value, onChange }: ProblemModifiersProps) {
-  const activeCount = Object.values(value).filter(Boolean).length;
+export function ProblemModifiersSelector({ value, onChange, disabled }: ProblemModifiersProps) {
+  const activeCount = disabled ? 0 : Object.values(value).filter(Boolean).length;
 
   const toggle = (key: keyof ProblemModifiers) => {
+    if (disabled) return;
     onChange({ ...value, [key]: !value[key] });
   };
 
@@ -70,19 +73,33 @@ export function ProblemModifiersSelector({ value, onChange }: ProblemModifiersPr
       <p className="text-xs text-muted-foreground -mt-1">
         Fine-tune your worksheet with specific constraints
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {disabled && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-xs">
+          <Lock className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            Problem modifiers are available on paid plans.{" "}
+            <a href="/pricing" className="underline font-semibold hover:text-amber-900">
+              Upgrade →
+            </a>
+          </span>
+        </div>
+      )}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 gap-2 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
         {MODIFIER_OPTIONS.map((opt) => {
-          const isActive = value[opt.key];
+          const isActive = disabled ? false : value[opt.key];
           return (
             <button
               key={opt.key}
               type="button"
               onClick={() => toggle(opt.key)}
+              disabled={disabled}
               className={`
-                flex items-start gap-3 p-3 rounded-lg border text-left transition-all
-                ${isActive
-                  ? "border-[#1a365d] bg-[#1a365d]/5 ring-1 ring-[#1a365d]/20"
-                  : "border-border hover:border-[#1a365d]/30 hover:bg-muted/50"
+                flex items-start gap-3 p-3 rounded-lg border text-left transition-all relative
+                ${disabled
+                  ? "border-border cursor-not-allowed"
+                  : isActive
+                    ? "border-[#1a365d] bg-[#1a365d]/5 ring-1 ring-[#1a365d]/20"
+                    : "border-border hover:border-[#1a365d]/30 hover:bg-muted/50"
                 }
               `}
             >
@@ -97,19 +114,25 @@ export function ProblemModifiersSelector({ value, onChange }: ProblemModifiersPr
                   {opt.description}
                 </div>
               </div>
-              <div className={`
-                ml-auto shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all
-                ${isActive
-                  ? "border-[#1a365d] bg-[#1a365d]"
-                  : "border-muted-foreground/30"
-                }
-              `}>
-                {isActive && (
-                  <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
-              </div>
+              {disabled ? (
+                <div className="ml-auto shrink-0 mt-0.5">
+                  <Lock className="h-4 w-4 text-muted-foreground/40" />
+                </div>
+              ) : (
+                <div className={`
+                  ml-auto shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-all
+                  ${isActive
+                    ? "border-[#1a365d] bg-[#1a365d]"
+                    : "border-muted-foreground/30"
+                  }
+                `}>
+                  {isActive && (
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+              )}
             </button>
           );
         })}
