@@ -1,5 +1,5 @@
 import { WorksheetForm } from "@/components/worksheet-form";
-import { Camera, Sparkles, Download, Star, Check, Zap, Target, Brain } from "lucide-react";
+import { Camera, Sparkles, Download, Star, Check, Zap, Target, Brain, Mail, Globe, Calendar, CreditCard, FileText, Shield, BookOpen } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { AuthButton } from "@/components/auth-button";
@@ -59,13 +59,13 @@ export default function Home() {
               AI-Powered SAT Math Practice
             </div>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-[#1a365d] mb-5">
-              Stop Searching for{" "}
-              <span className="text-[#e53e3e]">SAT Practice Problems</span>
+              Generate{" "}
+              <span className="text-[#e53e3e]">Custom SAT Worksheets</span>
+              {" "}in Seconds
             </h1>
             <p className="text-lg md:text-xl text-slate-600 mb-3 max-w-2xl mx-auto">
-              Generate unlimited, customized SAT math worksheets in seconds.
-              Upload a problem screenshot or pick a topic — get a printable PDF with
-              step-by-step answer keys.
+              Pick a topic or snap a photo of any SAT problem — our AI creates
+              a printable PDF worksheet with step-by-step solutions instantly.
             </p>
             <p className="text-sm text-slate-500 mb-2">
               5 free worksheets every month. No account needed.
@@ -100,7 +100,7 @@ export default function Home() {
               </div>
               <h3 className="font-semibold text-[#1a365d] mb-1">3. Download &amp; Practice</h3>
               <p className="text-sm text-slate-500">
-                Print your professional PDF worksheet with full solutions and answer key
+                Get a professional PDF worksheet with full solutions and answer key
               </p>
             </div>
           </div>
@@ -190,7 +190,6 @@ export default function Home() {
               </h2>
               <p className="text-white/70 max-w-xl mx-auto">
                 Start free. Upgrade when you need more practice.
-                Every plan includes all topics, difficulty levels, and problem modifiers.
               </p>
             </div>
 
@@ -198,13 +197,13 @@ export default function Home() {
               {/* Free */}
               <div className="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20">
                 <h3 className="text-lg font-bold text-white mb-1">Free</h3>
-                <p className="text-white/60 text-sm mb-4">Try it out</p>
+                <p className="text-white/60 text-sm mb-4">Get started free</p>
                 <p className="text-3xl font-bold text-white mb-1">
                   $0<span className="text-sm font-normal text-white/60">/mo</span>
                 </p>
                 <p className="text-[#e53e3e] text-sm font-medium mb-5">5 worksheets/month</p>
                 <ul className="space-y-2 mb-6">
-                  {["5 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "No account needed"].map((f) => (
+                  {["5 worksheets per month", "All SAT math topics", "3 difficulty levels", "PDF worksheet download", "Unlock 1 answer key/month via email", "No account required"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="h-4 w-4 text-green-400 shrink-0" />
                       {f}
@@ -220,41 +219,15 @@ export default function Home() {
               </div>
 
               {/* Starter */}
-              <div className="bg-white rounded-2xl p-6 shadow-xl border-2 border-[#e53e3e] relative">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#e53e3e] text-white text-xs font-bold rounded-full">
-                  BEST VALUE
-                </div>
-                <h3 className="text-lg font-bold text-[#1a365d] mb-1">Starter</h3>
-                <p className="text-slate-500 text-sm mb-4">For regular practice</p>
-                <p className="text-3xl font-bold text-[#1a365d] mb-1">
-                  $5<span className="text-sm font-normal text-slate-500">/mo</span>
+              <div className="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20">
+                <h3 className="text-lg font-bold text-white mb-1">Starter</h3>
+                <p className="text-white/60 text-sm mb-4">For regular practice</p>
+                <p className="text-3xl font-bold text-white mb-1">
+                  $5<span className="text-sm font-normal text-white/60">/mo</span>
                 </p>
                 <p className="text-[#e53e3e] text-sm font-medium mb-5">30 worksheets/month</p>
                 <ul className="space-y-2 mb-6">
-                  {["30 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "Multi-screenshot worksheets", "Use anytime — no daily cap"].map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                      <Check className="h-4 w-4 text-green-600 shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <SubscribeButton
-                  planId="starter"
-                  label="Subscribe — $5/mo"
-                  className="w-full block text-center py-2.5 px-4 rounded-lg bg-[#1a365d] text-white font-medium text-sm hover:bg-[#1a365d]/90 transition-colors cursor-pointer"
-                />
-              </div>
-
-              {/* Pro */}
-              <div className="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20">
-                <h3 className="text-lg font-bold text-white mb-1">Pro</h3>
-                <p className="text-white/60 text-sm mb-4">For serious prep</p>
-                <p className="text-3xl font-bold text-white mb-1">
-                  $25<span className="text-sm font-normal text-white/60">/mo</span>
-                </p>
-                <p className="text-[#e53e3e] text-sm font-medium mb-5">100 worksheets/month</p>
-                <ul className="space-y-2 mb-6">
-                  {["100 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "Multi-screenshot worksheets", "Priority generation"].map((f) => (
+                  {["30 worksheets per month", "All topics & difficulty levels", "✅ Answer keys included", "✅ Problem modifiers", "Upload up to 3 screenshots", "Auto-detect topics from photos", "No daily cap"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="h-4 w-4 text-green-400 shrink-0" />
                       {f}
@@ -262,9 +235,35 @@ export default function Home() {
                   ))}
                 </ul>
                 <SubscribeButton
-                  planId="pro"
-                  label="Subscribe — $25/mo"
+                  planId="starter"
+                  label="Get Starter — $5/mo"
                   className="w-full block text-center py-2.5 px-4 rounded-lg bg-white/20 text-white font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
+                />
+              </div>
+
+              {/* Pro */}
+              <div className="bg-white rounded-2xl p-6 shadow-xl border-2 border-[#e53e3e] relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-[#e53e3e] text-white text-xs font-bold rounded-full">
+                  MOST POPULAR
+                </div>
+                <h3 className="text-lg font-bold text-[#1a365d] mb-1">Pro</h3>
+                <p className="text-slate-500 text-sm mb-4">Most popular</p>
+                <p className="text-3xl font-bold text-[#1a365d] mb-1">
+                  $25<span className="text-sm font-normal text-slate-500">/mo</span>
+                </p>
+                <p className="text-[#e53e3e] text-sm font-medium mb-5">100 worksheets/month</p>
+                <ul className="space-y-2 mb-6">
+                  {["100 worksheets per month", "Everything in Starter, plus:", "Upload up to 10 screenshots", "Multi-topic mixed worksheets", "Priority generation", "Best value for serious prep"].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
+                      <Check className="h-4 w-4 text-green-600 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <SubscribeButton
+                  planId="pro"
+                  label="Go Pro — $25/mo"
+                  className="w-full block text-center py-2.5 px-4 rounded-lg bg-[#1a365d] text-white font-medium text-sm hover:bg-[#1a365d]/90 transition-colors cursor-pointer"
                 />
               </div>
 
@@ -277,7 +276,7 @@ export default function Home() {
                 </p>
                 <p className="text-[#e53e3e] text-sm font-medium mb-5">500 worksheets/month</p>
                 <ul className="space-y-2 mb-6">
-                  {["500 worksheets per month", "All 23 topics", "All modifiers", "PDF + answer key", "Screenshot auto-detect", "Multi-screenshot worksheets", "Priority generation", "Ideal for tutoring companies"].map((f) => (
+                  {["500 worksheets per month", "Everything in Pro, plus:", "Ideal for tutoring companies", "School & classroom use"].map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-white/80">
                       <Check className="h-4 w-4 text-green-400 shrink-0" />
                       {f}
@@ -286,10 +285,17 @@ export default function Home() {
                 </ul>
                 <SubscribeButton
                   planId="enterprise"
-                  label="Subscribe — $99/mo"
+                  label="Get Enterprise — $99/mo"
                   className="w-full block text-center py-2.5 px-4 rounded-lg bg-white/20 text-white font-medium text-sm hover:bg-white/30 transition-colors cursor-pointer"
                 />
               </div>
+            </div>
+
+            {/* Annual upsell */}
+            <div className="text-center mt-8">
+              <Link href="/pricing" className="inline-flex items-center gap-2 text-white/70 hover:text-white text-sm transition-colors">
+                <span>💡 Save $100/year with Pro Annual →</span>
+              </Link>
             </div>
           </div>
         </section>
@@ -332,41 +338,54 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-6 text-sm flex-wrap">
-              <Link href="/pricing" className="hover:text-white transition-colors">
+              <Link href="/pricing" className="hover:text-white transition-colors inline-flex items-center gap-1.5">
+                <CreditCard className="h-3.5 w-3.5" />
                 Pricing
               </Link>
               <a
                 href="mailto:info@tkoprep.com"
-                className="hover:text-white transition-colors"
+                className="hover:text-white transition-colors inline-flex items-center gap-1.5"
               >
+                <Mail className="h-3.5 w-3.5" />
                 info@tkoprep.com
               </a>
               <a
                 href="https://tkoprep.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="hover:text-white transition-colors inline-flex items-center gap-1.5"
               >
+                <Globe className="h-3.5 w-3.5" />
                 tkoprep.com
               </a>
               <a
                 href="https://tkoprep.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="hover:text-white transition-colors inline-flex items-center gap-1.5"
               >
+                <Calendar className="h-3.5 w-3.5" />
                 Book a Consultation
               </a>
             </div>
           </div>
-          <div className="mt-6 pt-4 border-t border-white/10 text-center text-xs text-white/50">
-            © {new Date().getFullYear()} TKO Prep. SAT is a registered trademark of the College Board, which is not affiliated with TKO Prep.
-            <span className="mx-2">|</span>
-            <Link href="/privacy" className="hover:text-white/80">Privacy Policy</Link>
-            <span className="mx-2">|</span>
-            <Link href="/terms" className="hover:text-white/80">Terms of Service</Link>
-            <span className="mx-2">|</span>
-            <Link href="/refund" className="hover:text-white/80">Refund Policy</Link>
+          <div className="mt-6 pt-4 border-t border-white/10 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-white/50">
+            <span>© {new Date().getFullYear()} TKO Prep. SAT is a registered trademark of the College Board, which is not affiliated with TKO Prep.</span>
+            <span className="hidden sm:inline">|</span>
+            <Link href="/privacy" className="hover:text-white/80 inline-flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Privacy Policy
+            </Link>
+            <span>|</span>
+            <Link href="/terms" className="hover:text-white/80 inline-flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              Terms of Service
+            </Link>
+            <span>|</span>
+            <Link href="/refund" className="hover:text-white/80 inline-flex items-center gap-1">
+              <BookOpen className="h-3 w-3" />
+              Refund Policy
+            </Link>
           </div>
         </div>
       </footer>

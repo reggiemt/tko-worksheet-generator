@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, X, Crown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { SubscribeButton } from "@/components/subscribe-button";
@@ -10,18 +10,18 @@ const PLANS = {
       name: "Free",
       price: "$0",
       period: "",
-      description: "Try it out",
+      description: "Get started free",
       worksheets: "5 worksheets/month",
       features: [
         "5 worksheets per month",
-        "All topics & difficulty levels",
-        "Problem modifiers",
-        "PDF worksheet + answer key",
-        "Screenshot upload & auto-detect",
+        "All SAT math topics",
+        "3 difficulty levels",
+        "PDF worksheet download",
+        "Unlock 1 answer key/month via email",
         "No account required",
       ],
       planId: null as null,
-      cta: "Get Started",
+      cta: "Start Generating",
       ctaHref: "/",
       highlight: false,
     },
@@ -34,14 +34,14 @@ const PLANS = {
       features: [
         "30 worksheets per month",
         "All topics & difficulty levels",
-        "Problem modifiers",
-        "PDF worksheet + answer key",
-        "Screenshot upload & auto-detect",
-        "Multi-screenshot worksheets",
-        "Use anytime — no daily cap",
+        "✅ Answer keys included",
+        "✅ Problem modifiers (fractions, no-Desmos, etc.)",
+        "Upload up to 3 screenshots",
+        "Auto-detect topics from photos",
+        "No daily cap",
       ],
       planId: "starter" as const,
-      cta: "Subscribe — $5/mo",
+      cta: "Get Starter — $5/mo",
       ctaHref: "#",
       highlight: false,
     },
@@ -49,19 +49,18 @@ const PLANS = {
       name: "Pro",
       price: "$25",
       period: "/month",
-      description: "For serious prep",
+      description: "Most popular",
       worksheets: "100 worksheets/month",
       features: [
         "100 worksheets per month",
-        "All topics & difficulty levels",
-        "Problem modifiers",
-        "PDF worksheet + answer key",
-        "Screenshot upload & auto-detect",
-        "Multi-screenshot worksheets",
+        "Everything in Starter, plus:",
+        "Upload up to 10 screenshots",
+        "Multi-topic mixed worksheets",
         "Priority generation",
+        "Best value for serious prep",
       ],
       planId: "pro" as const,
-      cta: "Subscribe — $25/mo",
+      cta: "Go Pro — $25/mo",
       ctaHref: "#",
       highlight: true,
     },
@@ -73,16 +72,12 @@ const PLANS = {
       worksheets: "500 worksheets/month",
       features: [
         "500 worksheets per month",
-        "All topics & difficulty levels",
-        "Problem modifiers",
-        "PDF worksheet + answer key",
-        "Screenshot upload & auto-detect",
-        "Multi-screenshot worksheets",
-        "Priority generation",
+        "Everything in Pro, plus:",
         "Ideal for tutoring companies",
+        "School & classroom use",
       ],
       planId: "enterprise" as const,
-      cta: "Subscribe — $99/mo",
+      cta: "Get Enterprise — $99/mo",
       ctaHref: "#",
       highlight: false,
     },
@@ -92,18 +87,18 @@ const PLANS = {
       name: "Free",
       price: "$0",
       period: "",
-      description: "Try it out",
+      description: "Get started free",
       worksheets: "5 worksheets/month",
       features: [
         "5 worksheets per month",
-        "All topics & difficulty levels",
-        "Problem modifiers",
-        "PDF worksheet + answer key",
-        "Screenshot upload & auto-detect",
+        "All SAT math topics",
+        "3 difficulty levels",
+        "PDF worksheet download",
+        "Unlock 1 answer key/month via email",
         "No account required",
       ],
       planId: null as null,
-      cta: "Get Started",
+      cta: "Start Generating",
       ctaHref: "/",
       highlight: false,
     },
@@ -116,14 +111,14 @@ const PLANS = {
       features: [
         "30 worksheets per month",
         "All topics & difficulty levels",
-        "Problem modifiers",
-        "PDF worksheet + answer key",
-        "Screenshot upload & auto-detect",
-        "Multi-screenshot worksheets",
-        "Use anytime — no daily cap",
+        "✅ Answer keys included",
+        "✅ Problem modifiers (fractions, no-Desmos, etc.)",
+        "Upload up to 3 screenshots",
+        "Auto-detect topics from photos",
+        "No daily cap",
       ],
       planId: "starter" as const,
-      cta: "Subscribe — $5/mo",
+      cta: "Get Starter — $5/mo",
       ctaHref: "#",
       highlight: false,
     },
@@ -132,19 +127,18 @@ const PLANS = {
       price: "$200",
       period: "/year",
       savings: "Save $100",
-      description: "For serious prep",
+      description: "Most popular",
       worksheets: "100 worksheets/month",
       features: [
         "100 worksheets per month",
-        "All topics & difficulty levels",
-        "Problem modifiers",
-        "PDF worksheet + answer key",
-        "Screenshot upload & auto-detect",
-        "Multi-screenshot worksheets",
+        "Everything in Starter, plus:",
+        "Upload up to 10 screenshots",
+        "Multi-topic mixed worksheets",
         "Priority generation",
+        "Best value for serious prep",
       ],
       planId: "pro-annual" as const,
-      cta: "Subscribe — $200/year",
+      cta: "Go Pro — $200/year",
       ctaHref: "#",
       highlight: true,
     },
@@ -156,16 +150,12 @@ const PLANS = {
       worksheets: "500 worksheets/month",
       features: [
         "500 worksheets per month",
-        "All topics & difficulty levels",
-        "Problem modifiers",
-        "PDF worksheet + answer key",
-        "Screenshot upload & auto-detect",
-        "Multi-screenshot worksheets",
-        "Priority generation",
+        "Everything in Pro, plus:",
         "Ideal for tutoring companies",
+        "School & classroom use",
       ],
       planId: "enterprise" as const,
-      cta: "Subscribe — $99/mo",
+      cta: "Get Enterprise — $99/mo",
       ctaHref: "#",
       highlight: false,
     },
@@ -208,12 +198,23 @@ export default function PricingPage() {
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             AI-generated worksheets tailored to exactly what you need to practice.
-            Choose a plan that fits your prep schedule.
+            Choose the plan that fits your prep schedule.
           </p>
         </div>
 
         {/* Billing Toggle + Cards */}
         <PricingToggle plans={PLANS} />
+
+        {/* Comparison Note */}
+        <div className="max-w-2xl mx-auto mt-12 bg-slate-50 dark:bg-gray-900 rounded-xl p-6 border border-slate-200 dark:border-gray-800">
+          <h3 className="font-semibold text-[#1a365d] mb-3 text-center">What&apos;s included at every level</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-600">
+            <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-600 shrink-0" /> All 23 SAT math topics</div>
+            <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-600 shrink-0" /> 3 difficulty levels</div>
+            <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-600 shrink-0" /> Printable PDF format</div>
+            <div className="flex items-center gap-2"><Check className="h-4 w-4 text-green-600 shrink-0" /> Step-by-step solutions</div>
+          </div>
+        </div>
 
         {/* FAQ / Bottom CTA */}
         <div className="text-center mt-16">
