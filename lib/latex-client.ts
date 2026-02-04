@@ -10,38 +10,61 @@ interface CompileOptions {
   additionalResources?: LatexResource[];
 }
 
-async function tryCompile(
+// Use our own LaTeX service if configured, otherwise fall back to ytotech
+const LATEX_SERVICE_URL = process.env.LATEX_SERVICE_URL;
+const LATEX_API_KEY = process.env.LATEX_API_KEY;
+
+async function tryCompileOwn(
+  latexContent: string,
+  additionalResources?: LatexResource[]
+): Promise<{ ok: boolean; buffer?: Buffer; error?: string }> {
+  if (!LATEX_SERVICE_URL) return { ok: false, error: "LATEX_SERVICE_URL not configured" };
+
+  try {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (LATEX_API_KEY) headers["x-api-key"] = LATEX_API_KEY;
+
+    const response = await fetch(`${LATEX_SERVICE_URL}/compile`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        content: latexContent,
+        resources: additionalResources?.map((r) => ({ path: r.path, file: r.file })),
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+      return { ok: false, error: `${response.status}: ${(errorData as Record<string, string>).details || (errorData as Record<string, string>).error || "Compilation failed"}` };
+    }
+
+    const pdfBuffer = await response.arrayBuffer();
+    return { ok: true, buffer: Buffer.from(pdfBuffer) };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
+  }
+}
+
+async function tryCompileYtotech(
   latexContent: string,
   compiler: string,
   additionalResources?: LatexResource[]
 ): Promise<{ ok: boolean; buffer?: Buffer; error?: string }> {
   try {
     const resources: Record<string, unknown>[] = [
-      {
-        main: true,
-        content: latexContent,
-      },
+      { main: true, content: latexContent },
     ];
 
-    // Add any additional resource files (e.g., custom logo images)
     if (additionalResources) {
       for (const res of additionalResources) {
-        resources.push({
-          path: res.path,
-          file: res.file,
-        });
+        resources.push({ path: res.path, file: res.file });
       }
     }
 
     const response = await fetch("https://latex.ytotech.com/builds/sync", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        compiler,
-        resources,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ compiler, resources }),
     });
 
     if (!response.ok) {
@@ -58,11 +81,21 @@ async function tryCompile(
     const pdfBuffer = await response.arrayBuffer();
     return { ok: true, buffer: Buffer.from(pdfBuffer) };
   } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Unknown error",
-    };
+    return { ok: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
+}
+
+async function tryCompile(
+  latexContent: string,
+  compiler: string,
+  additionalResources?: LatexResource[]
+): Promise<{ ok: boolean; buffer?: Buffer; error?: string }> {
+  // Prefer our own service if configured
+  if (LATEX_SERVICE_URL) {
+    return tryCompileOwn(latexContent, additionalResources);
+  }
+  // Fall back to ytotech
+  return tryCompileYtotech(latexContent, compiler, additionalResources);
 }
 
 function stripTikz(latex: string): string {
