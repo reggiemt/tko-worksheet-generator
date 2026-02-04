@@ -48,6 +48,7 @@ export function WorksheetForm() {
   // Multi-screenshot state
   const [multiTopics, setMultiTopics] = useState<{ category: string; subcategory: string }[]>([]);
   const [multiEnabled, setMultiEnabled] = useState(false);
+  const [maxScreenshots, setMaxScreenshots] = useState(1);
   const [userTier, setUserTier] = useState<string>("free");
 
   // Fetch user tier to determine multi-screenshot eligibility & track limits
@@ -59,6 +60,14 @@ export function WorksheetForm() {
         setUserTier(tier);
         const paidTiers = ["starter", "pro", "enterprise", "unlimited"];
         setMultiEnabled(data.authenticated && paidTiers.includes(tier));
+        const screenshotLimits: Record<string, number> = {
+          free: 1,
+          starter: 3,
+          pro: 10,
+          enterprise: 10,
+          unlimited: 10,
+        };
+        setMaxScreenshots(data.authenticated ? (screenshotLimits[tier] ?? 1) : 1);
         if (data.remaining <= 0) {
           setLimitReached(true);
         }
@@ -276,6 +285,7 @@ export function WorksheetForm() {
                 onAnalysisComplete={handleAnalysisComplete}
                 onMultiAnalysisComplete={handleMultiAnalysisComplete}
                 multiEnabled={multiEnabled}
+                maxScreenshots={maxScreenshots}
               />
 
               {screenshotDetected && category && subcategory && (

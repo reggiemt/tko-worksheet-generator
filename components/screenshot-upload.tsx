@@ -24,19 +24,21 @@ interface ScreenshotUploadProps {
   onAnalysisComplete: (result: AnalysisResult) => void;
   onMultiAnalysisComplete?: (results: AnalysisResult[]) => void;
   multiEnabled?: boolean;
+  maxScreenshots?: number;
 }
 
 export function ScreenshotUpload({
   onAnalysisComplete,
   onMultiAnalysisComplete,
   multiEnabled = false,
+  maxScreenshots,
 }: ScreenshotUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [entries, setEntries] = useState<ScreenshotEntry[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-  const MAX_SCREENSHOTS = multiEnabled ? 3 : 1;
+  const MAX_SCREENSHOTS = maxScreenshots || (multiEnabled ? 3 : 1);
 
   const analyzeImage = useCallback(
     async (dataUrl: string, entryId: string) => {
