@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analyzeScreenshot } from "@/lib/claude-client";
 import { checkAnalyzeRateLimit, getClientIp } from "@/lib/rate-limit";
+import { getTierForEmail } from "@/lib/subscription";
+import { auth } from "@/auth";
 import { analyzeRequestSchema, MAX_IMAGE_BASE64_LENGTH } from "@/lib/validators";
 import type { AnalyzeResponse } from "@/lib/types";
 
@@ -36,9 +38,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<AnalyzeRe
       );
     }
 
-    // 4. Check rate limit
+    // 4. Check rate limit (tier-aware)
     const ip = getClientIp(request);
-    const rateLimitResult = await checkAnalyzeRateLimit(ip);
+    const session = await auth();
+    const userEmail = session?.user?.email || null;
+    const tier = userEmail ? await getTierForEmail(userEmail) : "free";
+    const rateLimitResult = await checkAnalyzeRateLimit(ip, tier, userEmail || undefined);
 
     if (!rateLimitResult.success) {
       return NextResponse.json(

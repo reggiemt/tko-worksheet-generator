@@ -164,17 +164,32 @@ export async function incrementPaidUsage(userId: string): Promise<void> {
   }
 }
 
-// ── Screenshot analysis (generous limit for all users) ────────────
+// ── Screenshot analysis ───────────────────────────────────────────
 
-export async function checkAnalyzeRateLimit(ip: string): Promise<RateLimitResult> {
+const ANALYZE_LIMITS: Record<SubscriptionTier, number> = {
+  free: 10,
+  starter: 50,
+  pro: 200,
+  enterprise: 500,
+  unlimited: 999999,
+};
+
+export async function checkAnalyzeRateLimit(
+  ip: string,
+  tier: SubscriptionTier = "free",
+  userId?: string
+): Promise<RateLimitResult> {
   if (!getRedis()) {
     return { success: true, remaining: 999, reset: 0 };
   }
 
-  const key = `worksheet:analyze:${ip}`;
+  // Use userId for paid users, IP for free
+  const identifier = userId && tier !== "free" ? `user:${userId}` : `ip:${ip}`;
+  const key = `worksheet:analyze:${identifier}`;
+  const limit = ANALYZE_LIMITS[tier];
   const count = (await getRedis()!.get<number>(key)) || 0;
 
-  if (count >= 10) {
+  if (count >= limit) {
     return { success: false, remaining: 0, reset: 0 };
   }
 
@@ -184,7 +199,7 @@ export async function checkAnalyzeRateLimit(ip: string): Promise<RateLimitResult
     await getRedis()!.expire(key, 86400);
   }
 
-  return { success: true, remaining: 10 - count, reset: 0 };
+  return { success: true, remaining: limit - count, reset: 0 };
 }
 
 // ── Usage info (for UI display) ───────────────────────────────────
