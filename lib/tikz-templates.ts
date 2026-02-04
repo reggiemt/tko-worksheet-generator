@@ -173,22 +173,22 @@ function renderParallelLinesTransversal(
     const labelY = inter.y + labelDist * Math.sin(midRad);
 
     arcLines.push(
-      `    \\draw (${inter.x},${inter.y}) ++(${pos.start}:0.4) arc[start angle=${pos.start}, end angle=${pos.end.toFixed(2)}, radius=0.4];`
+      `    \\draw[thin] (${inter.x},${inter.y}) ++(${pos.start}:0.35) arc[start angle=${pos.start}, end angle=${pos.end.toFixed(2)}, radius=0.35];`
     );
     arcLines.push(
-      `    \\node at (${labelX.toFixed(3)},${labelY.toFixed(3)}) {\\small $${al.label}$};`
+      `    \\node at (${labelX.toFixed(3)},${labelY.toFixed(3)}) {\\footnotesize $${al.label}$};`
     );
   }
 
-  return `\\begin{tikzpicture}[scale=1]
+  return `\\begin{tikzpicture}[scale=1.1, line cap=round, line join=round]
     % Parallel lines
     \\draw[thick] (-0.5,0) -- (4.5,0) node[right] {$${lineLabels[0]}$};
     \\draw[thick] (0.5,2) -- (5.5,2) node[right] {$${lineLabels[1]}$};
     % Transversal
     \\draw[thick] (0,-0.67) -- (4.5,2.67);
-    % Parallel markers
-    \\draw[thick] (1.8,0) -- ++(0.15,0.15) (1.95,0) -- ++(0.15,0.15);
-    \\draw[thick] (2.8,2) -- ++(0.15,0.15) (2.95,2) -- ++(0.15,0.15);
+    % Parallel markers (arrows style)
+    \\draw (2.0,0.08) -- ++(0.12,0.12) (2.15,0.08) -- ++(0.12,0.12);
+    \\draw (3.0,2.08) -- ++(0.12,0.12) (3.15,2.08) -- ++(0.12,0.12);
     % Angle arcs and labels
 ${arcLines.join("\n")}
 \\end{tikzpicture}`;

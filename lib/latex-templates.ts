@@ -47,24 +47,46 @@ function sanitizeLatexContent(text: string): string {
     .join("");
 }
 
+function stripPhantomFigureReferences(text: string): string {
+  // Remove references to figures that don't exist
+  return text
+    .replace(/\s*[Ii]n the figure below,?\s*/g, " ")
+    .replace(/\s*[Ss]hown below,?\s*/g, " ")
+    .replace(/\s*[Ss]ee the (?:figure|diagram) below\.?\s*/g, " ")
+    .replace(/\s*(?:as )?shown in the (?:figure|diagram)(?:\s+below)?\.?\s*/g, " ")
+    .trim();
+}
+
 function buildProblemLatex(problem: Problem): string {
-  let latex = `\\problem\n${sanitizeLatexContent(problem.content)}\n`;
+  let hasRenderedVisual = false;
+  let visualTikz = "";
 
   if (problem.hasVisual && problem.visualCode) {
     try {
       const tikzCode = resolveVisualCode(problem.visualCode);
       if (tikzCode && !tikzCode.includes("[Figure]")) {
         console.log(`[LATEX] Problem #${problem.number}: Including visual (${tikzCode.length} chars of TikZ)`);
-        latex += `\n\\begin{center}\n${tikzCode}\n\\end{center}\n`;
+        visualTikz = `\n\\begin{center}\n${tikzCode}\n\\end{center}\n`;
+        hasRenderedVisual = true;
       } else {
         console.warn(`[LATEX] Problem #${problem.number}: Visual resolved to [Figure] placeholder — skipping`);
       }
     } catch (err) {
       console.warn(`[LATEX] Problem #${problem.number}: Visual rendering failed:`, err);
-      // Skip the figure rather than crash
     }
   } else if (problem.hasVisual && !problem.visualCode) {
     console.warn(`[LATEX] Problem #${problem.number}: hasVisual=true but visualCode is null/empty`);
+  }
+
+  // If no visual was rendered, strip any "figure below" references from the text
+  let contentText = problem.content;
+  if (!hasRenderedVisual) {
+    contentText = stripPhantomFigureReferences(contentText);
+  }
+
+  let latex = `\\problem\n${sanitizeLatexContent(contentText)}\n`;
+  if (hasRenderedVisual) {
+    latex += visualTikz;
   }
 
   if (problem.isGridIn) {
