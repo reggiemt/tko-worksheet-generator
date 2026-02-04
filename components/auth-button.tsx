@@ -27,7 +27,7 @@ export function AuthButton() {
     // Show sign in while loading
     return (
       <a
-        href="/api/auth/signin"
+        href="/signin"
         className="flex items-center gap-1.5 text-sm text-[#1a365d] hover:text-[#e53e3e] transition-colors font-medium"
       >
         <LogIn className="h-4 w-4" />
@@ -54,7 +54,7 @@ export function AuthButton() {
 
   return (
     <a
-      href="/api/auth/signin"
+      href="/signin"
       className="flex items-center gap-1.5 text-sm text-[#1a365d] hover:text-[#e53e3e] transition-colors font-medium"
     >
       <LogIn className="h-4 w-4" />
