@@ -219,9 +219,11 @@ function buildAnswerLatex(answer: Answer): string {
   const formattedSteps = rawSteps
     .map((step) => {
       const sanitized = sanitizeLatexContent(step.trim());
-      // If the step starts with "Step N:" make it bold
       if (/^Step\s*\d/i.test(sanitized)) {
-        return `\\textbf{${sanitized.replace(/^(Step\s*\d+:?)/i, "$1")}}`;
+        return `\\textbf{${sanitized}}`;
+      }
+      if (/^Key\s*insight/i.test(sanitized)) {
+        return `\\vspace{4pt}\\textit{${sanitized}}`;
       }
       return sanitized;
     })
@@ -229,17 +231,15 @@ function buildAnswerLatex(answer: Answer): string {
 
   const answerText = sanitizeLatexContent(answer.correctAnswer);
 
-  return `\\begin{minipage}{\\textwidth}
-\\vspace{0.8em}
-{\\large\\textbf{Problem ${answer.number}}} \\hfill {\\large\\fbox{\\textbf{\\strut\\ ${answerText}\\ }}}
+  return `\\begin{tcolorbox}[colback=tkoLight, colframe=tkoBlue, boxrule=0.3pt, arc=2pt, left=8pt, right=8pt, top=6pt, bottom=6pt]
+\\textbf{Problem ${answer.number}.} \\hfill \\fcolorbox{answerGreen}{white}{\\textbf{\\strut\\ ${answerText}\\ }}
 
-\\vspace{0.4em}
+\\vspace{6pt}
 {\\small\\textit{Solution:}}
 
-\\vspace{0.2em}
+\\vspace{4pt}
 {\\small ${formattedSteps}}
-\\vspace{0.4em}
-\\end{minipage}`;
+\\end{tcolorbox}`;
 }
 
 export function buildAnswerKeyLatex(worksheet: GeneratedWorksheet, customBranding?: CustomBranding): string {
@@ -301,6 +301,12 @@ export function buildAnswerKeyLatex(worksheet: GeneratedWorksheet, customBrandin
 ${graphicsPackage}
 % Colors
 \\usepackage{xcolor}
+\\usepackage{tcolorbox}
+
+\\definecolor{tkoBlue}{HTML}{1a365d}
+\\definecolor{tkoGray}{HTML}{718096}
+\\definecolor{tkoLight}{HTML}{EDF2F7}
+\\definecolor{answerGreen}{HTML}{276749}
 
 % Formatting
 \\usepackage{enumitem}
@@ -339,7 +345,7 @@ ${titleBlock}
 \\vspace{1em}
 
 %%% ANSWERS %%%
-${answers.map((a) => buildAnswerLatex(a)).join("\n\n{\\color{gray}\\hrule}\n")}
+${answers.map((a) => buildAnswerLatex(a)).join("\n\n\\vspace{0.3cm}\n")}
 
 \\vspace{2em}
 \\begin{center}

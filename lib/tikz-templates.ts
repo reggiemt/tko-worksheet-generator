@@ -948,20 +948,11 @@ export function resolveVisualCode(visualCode: string): string {
       return result;
     }
   } catch {
-    // Not JSON — might be raw TikZ
+    // Not JSON — reject raw TikZ
   }
 
-  // If it looks like raw TikZ, try to use it but with safety wrapping
-  if (visualCode.includes("\\begin{tikzpicture}") || visualCode.includes("\\draw") || visualCode.includes("\\node")) {
-    console.warn("Visual code is raw TikZ (not template JSON) — using with safety wrapping");
-    // Ensure it's wrapped in tikzpicture if not already
-    if (!visualCode.includes("\\begin{tikzpicture}")) {
-      return `\\begin{tikzpicture}\n${visualCode}\n\\end{tikzpicture}`;
-    }
-    return visualCode;
-  }
-
-  // Not TikZ at all — skip it to avoid compilation errors
-  console.warn("Visual code is neither template JSON nor TikZ — omitting:", visualCode.substring(0, 100));
+  // Raw TikZ is NOT allowed — it causes compilation failures on the server.
+  // Claude must use the template system (JSON with template name + params).
+  console.warn("Visual code is raw TikZ (not template JSON) — rejecting to prevent compilation failures:", visualCode.substring(0, 100));
   return "\\textit{[Figure]}";
 }

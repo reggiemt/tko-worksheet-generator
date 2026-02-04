@@ -127,6 +127,8 @@ Example:
 
 CRITICAL: Do NOT write raw TikZ code. Use the template system by setting visualCode to a JSON string with "template" and "params" keys. The template system guarantees correct label placement and prevents common TikZ bugs.
 
+IMPORTANT: For visual elements, you MUST use the parameterized template system. Return visualCode as a JSON string with {template: 'template_name', params: {...}}. Available templates: parallel_lines_transversal, right_triangle, general_triangle, circle_with_angle, coordinate_plane_line, coordinate_plane_parabola, supplementary_angles, rectangle_with_diagonal. Do NOT generate raw TikZ code — it will be rejected and replaced with a [Figure] placeholder.
+
 If none of the templates fit the problem, you may omit the visual (set hasVisual to false).
 
 ### CRITICAL: Diagram Labeling Rules for Geometry/Trig
