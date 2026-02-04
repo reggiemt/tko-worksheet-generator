@@ -110,17 +110,28 @@ function stripTikz(latex: string): string {
 
 function sanitizeForRetry(latex: string): string {
   // More aggressive sanitization for retry attempts
+  // IMPORTANT: Only sanitize the document BODY, never the preamble.
+  // Escaping % in the preamble turns LaTeX comments into visible text.
   let cleaned = stripTikz(latex);
 
-  cleaned = cleaned
+  // Split at \begin{document} to protect the preamble
+  const docStart = cleaned.indexOf("\\begin{document}");
+  if (docStart === -1) {
+    // No \begin{document} found — just do basic cleanup
+    return cleaned;
+  }
+
+  const preamble = cleaned.substring(0, docStart + "\\begin{document}".length);
+  let body = cleaned.substring(docStart + "\\begin{document}".length);
+
+  body = body
     // Fix double-escaped backslashes
     .replace(/\\\\\\\\/g, "\\\\")
     // Fix common fraction issues
     .replace(/\\frac\s+/g, "\\frac")
     // Remove any \n literals that should be newlines
     .replace(/(?<!\\)\\n/g, "\n")
-    // Escape unescaped special chars in text contexts (%, &, #, $, _)
-    .replace(/(?<!\\)%/g, "\\%")
+    // Escape unescaped & and # in body text (but NOT % — those are comments!)
     .replace(/(?<!\\)&(?!\\)/g, "\\&")
     .replace(/(?<!\\)#(?!\d)/g, "\\#")
     // Fix unmatched braces — remove orphan opening/closing
@@ -139,7 +150,7 @@ function sanitizeForRetry(latex: string): string {
       return replacements[char] || "";
     });
 
-  return cleaned;
+  return preamble + body;
 }
 
 export interface CompileLog {

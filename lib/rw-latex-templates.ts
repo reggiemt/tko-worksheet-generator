@@ -189,7 +189,7 @@ ${graphicsPackage}
 % Formatting
 \\usepackage{enumitem}
 \\usepackage{fancyhdr}
-\\usepackage{lastpage}
+% \\usepackage{lastpage} % removed: single-pass compilation
 
 % URLs
 \\usepackage{hyperref}
@@ -210,7 +210,7 @@ ${graphicsPackage}
 \\fancyhf{}
 \\fancyhead[L]{SAT Reading \\& Writing Practice --- ${capitalize(metadata.difficulty)}}
 \\fancyhead[R]{${escapeLatex(topicName)}}
-\\fancyfoot[C]{Page \\thepage\\ of \\pageref{LastPage}}
+\\fancyfoot[C]{Page \\thepage}
 \\renewcommand{\\headrulewidth}{0.4pt}
 \\renewcommand{\\footrulewidth}{0.4pt}
 
@@ -327,7 +327,7 @@ ${graphicsPackage}
 % Formatting
 \\usepackage{enumitem}
 \\usepackage{fancyhdr}
-\\usepackage{lastpage}
+% \\usepackage{lastpage} % removed: single-pass compilation
 
 % URLs
 \\usepackage{hyperref}
@@ -348,7 +348,7 @@ ${graphicsPackage}
 \\fancyhf{}
 \\fancyhead[L]{Answer Key --- Reading \\& Writing}
 \\fancyhead[R]{${escapeLatex(topicName)}}
-\\fancyfoot[C]{Page \\thepage\\ of \\pageref{LastPage}}
+\\fancyfoot[C]{Page \\thepage}
 \\renewcommand{\\headrulewidth}{0.4pt}
 \\renewcommand{\\footrulewidth}{0.4pt}
 
