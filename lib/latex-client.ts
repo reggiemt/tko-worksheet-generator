@@ -1,3 +1,5 @@
+import { getRedisClient } from "./redis";
+
 export interface LatexResource {
   path: string;
   file: string; // base64-encoded binary content
@@ -107,61 +109,87 @@ function sanitizeForRetry(latex: string): string {
   return cleaned;
 }
 
+export interface CompileLog {
+  attempt: number;
+  strategy: string;
+  success: boolean;
+  error?: string;
+}
+
 export async function compileLaTeX(
   latexContent: string,
   options: CompileOptions = {}
 ): Promise<Buffer> {
   const compiler = options.compiler || "pdflatex";
   const additionalResources = options.additionalResources;
+  const logs: CompileLog[] = [];
 
-  // Attempt 1: Full document as-is
-  console.log("LaTeX compile: attempt 1 (full document)");
-  const result1 = await tryCompile(latexContent, compiler, additionalResources);
-  if (result1.ok && result1.buffer) {
-    return result1.buffer;
+  const attempts: { name: string; transform: (latex: string) => string }[] = [
+    { name: "full document", transform: (l) => l },
+    { name: "stripped TikZ", transform: stripTikz },
+    { name: "aggressive sanitization", transform: sanitizeForRetry },
+    {
+      name: "nuclear sanitization",
+      transform: (l) => {
+        let cleaned = sanitizeForRetry(l);
+        cleaned = cleaned
+          .replace(/\\includegraphics(\[.*?\])?\{.*?\}/g, "")
+          .replace(/\\begin\{figure\}[\s\S]*?\\end\{figure\}/g, "")
+          .replace(/\\begin\{wrapfigure\}[\s\S]*?\\end\{wrapfigure\}/g, "")
+          .replace(/\\begin\{pgfpicture\}[\s\S]*?\\end\{pgfpicture\}/g, "")
+          .replace(/\\begin\{axis\}[\s\S]*?\\end\{axis\}/g, "");
+        return cleaned;
+      },
+    },
+  ];
+
+  for (let i = 0; i < attempts.length; i++) {
+    const { name, transform } = attempts[i];
+    console.log(`LaTeX compile: attempt ${i + 1} (${name})`);
+    const transformed = transform(latexContent);
+    const result = await tryCompile(transformed, compiler, additionalResources);
+    
+    logs.push({
+      attempt: i + 1,
+      strategy: name,
+      success: result.ok,
+      error: result.error,
+    });
+
+    if (result.ok && result.buffer) {
+      if (i > 0) console.log(`LaTeX compile: succeeded on attempt ${i + 1} (${name})`);
+      // Log to Redis for analysis (fire and forget)
+      logCompileResult(logs).catch(() => {});
+      return result.buffer;
+    }
+    console.warn(`LaTeX compile attempt ${i + 1} failed:`, result.error);
   }
-  console.warn("LaTeX compile attempt 1 failed:", result1.error);
 
-  // Attempt 2: Strip TikZ graphics (most common failure point)
-  console.log("LaTeX compile: attempt 2 (stripped TikZ)");
-  const strippedLatex = stripTikz(latexContent);
-  const result2 = await tryCompile(strippedLatex, compiler, additionalResources);
-  if (result2.ok && result2.buffer) {
-    console.log("LaTeX compile: succeeded after stripping TikZ");
-    return result2.buffer;
-  }
-  console.warn("LaTeX compile attempt 2 failed:", result2.error);
+  // All attempts failed — log for analysis
+  await logCompileResult(logs).catch(() => {});
 
-  // Attempt 3: Aggressive sanitization
-  console.log("LaTeX compile: attempt 3 (aggressive sanitization)");
-  const sanitizedLatex = sanitizeForRetry(latexContent);
-  const result3 = await tryCompile(sanitizedLatex, compiler, additionalResources);
-  if (result3.ok && result3.buffer) {
-    console.log("LaTeX compile: succeeded after aggressive sanitization");
-    return result3.buffer;
-  }
-  console.warn("LaTeX compile attempt 3 failed:", result3.error);
-
-  // Attempt 4: Nuclear option — strip all visual code AND aggressive sanitize
-  console.log("LaTeX compile: attempt 4 (nuclear sanitization)");
-  let nuclearLatex = sanitizeForRetry(latexContent);
-  // Remove ALL graphicx/figure related content
-  nuclearLatex = nuclearLatex
-    .replace(/\\includegraphics(\[.*?\])?\{.*?\}/g, "")
-    .replace(/\\begin\{figure\}[\s\S]*?\\end\{figure\}/g, "")
-    .replace(/\\begin\{wrapfigure\}[\s\S]*?\\end\{wrapfigure\}/g, "")
-    // Remove any remaining problematic environments
-    .replace(/\\begin\{pgfpicture\}[\s\S]*?\\end\{pgfpicture\}/g, "")
-    .replace(/\\begin\{axis\}[\s\S]*?\\end\{axis\}/g, "");
-  const result4 = await tryCompile(nuclearLatex, compiler, additionalResources);
-  if (result4.ok && result4.buffer) {
-    console.log("LaTeX compile: succeeded after nuclear sanitization");
-    return result4.buffer;
-  }
-  console.warn("LaTeX compile attempt 4 failed:", result4.error);
-
-  // All attempts failed
   throw new Error(
-    `LaTeX compilation failed after 4 attempts. Last error: ${result4.error}`
+    `LaTeX compilation failed after ${attempts.length} attempts. Errors: ${logs.map((l) => `[${l.strategy}] ${l.error?.substring(0, 200)}`).join(" | ")}`
   );
+}
+
+async function logCompileResult(logs: CompileLog[]): Promise<void> {
+  try {
+    const redis = getRedisClient();
+    if (!redis) return;
+    
+    const entry = {
+      timestamp: new Date().toISOString(),
+      attempts: logs,
+      finalSuccess: logs.some((l) => l.success),
+      succeededOn: logs.find((l) => l.success)?.strategy || null,
+    };
+    
+    // Store in a Redis list, keep last 100 entries
+    const key = "worksheet:latex-compile-log";
+    await redis.lpush(key, JSON.stringify(entry));
+    await redis.ltrim(key, 0, 99);
+  } catch {
+    // Never fail the main flow for logging
+  }
 }

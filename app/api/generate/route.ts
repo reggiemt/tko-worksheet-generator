@@ -251,7 +251,7 @@ export async function POST(request: NextRequest) {
           send({
             type: "progress",
             step: "compiling",
-            message: "Compiling PDF...",
+            message: "Compiling PDF (this may take a moment)...",
             percent: 85,
           });
 
@@ -334,6 +334,8 @@ export async function POST(request: NextRequest) {
             } else if (error.message.includes("rate") || error.message.includes("limit")) {
               errorMessage = "Service is busy. Please try again in a few minutes.";
             } else if (error.message.includes("LaTeX")) {
+              // Include attempt details for debugging
+              console.error("LaTeX failure details:", error.message);
               errorMessage =
                 "PDF generation failed. The AI-generated content may have formatting issues. Please try again.";
             } else if (error.message.includes("parse") || error.message.includes("JSON")) {
