@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT, buildUserPrompt, buildMultiTopicUserPrompt } from "./prompts";
 import type { Difficulty, GeneratedWorksheet, Problem, Answer, ProblemModifiers } from "./types";
+import { testCompileTikZ } from "./latex-client";
 
 // ── Verification types ──────────────────────────────────────────────
 
@@ -121,8 +122,11 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
     console.log(`[GENERATE]   Problem #${p.number}: visualCode = ${codePreview}...`);
   }
 
+  // Validate and fix TikZ figures
+  const fixedProblems = await validateAndFixFigures(client, parsed.problems);
+
   return {
-    problems: parsed.problems,
+    problems: fixedProblems,
     answers: parsed.answers,
     metadata: {
       category: params.topics && params.topics.length > 1 ? "mixed" : params.category,
@@ -132,6 +136,163 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
       generatedAt: new Date().toISOString(),
     },
   };
+}
+
+// ── TikZ Figure Validation & Auto-Fix Pipeline ─────────────────────
+
+/**
+ * For each problem with hasVisual:
+ * - If visualCode is missing → strip "figure below" references from text
+ * - If visualCode exists → test-compile it; if it fails, ask Claude to fix it
+ * - If fix fails too → strip figure references as graceful fallback
+ */
+async function validateAndFixFigures(
+  client: Anthropic,
+  problems: Problem[]
+): Promise<Problem[]> {
+  const results: Problem[] = [];
+  let tested = 0;
+  let passed = 0;
+  let fixed = 0;
+  let stripped = 0;
+
+  for (const problem of problems) {
+    // Case 1: hasVisual but no visualCode
+    if (problem.hasVisual && !problem.visualCode) {
+      console.warn(`[FIGURES] Problem #${problem.number}: hasVisual=true but no visualCode — stripping references`);
+      stripped++;
+      results.push({
+        ...problem,
+        hasVisual: false,
+        content: stripFigureReferences(problem.content),
+      });
+      continue;
+    }
+
+    // Case 2: has visualCode — test compile it
+    if (problem.hasVisual && problem.visualCode) {
+      tested++;
+      const compileResult = await testCompileTikZ(problem.visualCode);
+
+      if (compileResult.success) {
+        passed++;
+        console.log(`[FIGURES] Problem #${problem.number}: TikZ OK ✓`);
+        results.push(problem);
+      } else {
+        console.warn(`[FIGURES] Problem #${problem.number}: TikZ FAILED ✗ — ${compileResult.error?.substring(0, 200)}`);
+
+        // Try to fix via Claude
+        const fixedCode = await fixTikZCode(
+          client,
+          problem.visualCode,
+          compileResult.error || "Compilation failed",
+          problem.content
+        );
+
+        if (fixedCode) {
+          const fixResult = await testCompileTikZ(fixedCode);
+          if (fixResult.success) {
+            fixed++;
+            console.log(`[FIGURES] Problem #${problem.number}: TikZ FIXED ✓`);
+            results.push({ ...problem, visualCode: fixedCode });
+          } else {
+            stripped++;
+            console.warn(`[FIGURES] Problem #${problem.number}: fix also failed — stripping figure`);
+            results.push({
+              ...problem,
+              hasVisual: false,
+              visualCode: undefined,
+              content: stripFigureReferences(problem.content),
+            });
+          }
+        } else {
+          stripped++;
+          results.push({
+            ...problem,
+            hasVisual: false,
+            visualCode: undefined,
+            content: stripFigureReferences(problem.content),
+          });
+        }
+      }
+      continue;
+    }
+
+    // Case 3: no visual — pass through
+    results.push(problem);
+  }
+
+  console.log(`[FIGURES] Summary: ${tested} tested, ${passed} passed, ${fixed} fixed, ${stripped} stripped`);
+  return results;
+}
+
+/**
+ * Ask Claude to fix broken TikZ code given the compilation error.
+ */
+async function fixTikZCode(
+  client: Anthropic,
+  brokenCode: string,
+  error: string,
+  problemContext: string
+): Promise<string | null> {
+  try {
+    console.log(`[TIKZ-FIX] Attempting auto-fix...`);
+
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2000,
+      system:
+        "You are a LaTeX/TikZ expert. Fix the broken TikZ code based on the compilation error. Output ONLY the fixed TikZ code starting with \\begin{tikzpicture} and ending with \\end{tikzpicture}. No explanations, no markdown code blocks, no commentary.",
+      messages: [
+        {
+          role: "user",
+          content: `Fix this TikZ code that failed to compile.
+
+Problem context: ${problemContext.substring(0, 200)}
+
+Broken code:
+${brokenCode}
+
+Error:
+${error.substring(0, 500)}
+
+Output ONLY the fixed code:`,
+        },
+        {
+          role: "assistant",
+          content: "\\begin{tikzpicture}",
+        },
+      ],
+    });
+
+    const content = response.content[0];
+    if (content.type !== "text") return null;
+
+    const fixedCode = "\\begin{tikzpicture}" + content.text;
+
+    if (!fixedCode.includes("\\end{tikzpicture}")) return null;
+
+    // Trim anything after the closing tag
+    const endIdx = fixedCode.lastIndexOf("\\end{tikzpicture}");
+    return fixedCode.substring(0, endIdx + "\\end{tikzpicture}".length);
+  } catch (err) {
+    console.error(`[TIKZ-FIX] Failed: ${err}`);
+    return null;
+  }
+}
+
+/**
+ * Strip "In the figure below" and similar references when no figure exists.
+ */
+function stripFigureReferences(text: string): string {
+  return text
+    .replace(/[Ii]n the figure below,?\s*/g, "")
+    .replace(/[Aa]s shown in the figure(?: below)?,?\s*/g, "")
+    .replace(/[Tt]he figure (?:below )?shows\s*/g, "")
+    .replace(/[Rr]efer(?:ring)? to the figure(?: below)?,?\s*/g, "")
+    .replace(/[Uu]sing the figure below,?\s*/g, "")
+    .replace(/[Ss]hown below,?\s*/g, "")
+    .replace(/^\s+/, "");
 }
 
 export interface AnalyzeImageResult {

@@ -1,5 +1,42 @@
 import { getRedisClient } from "./redis";
 
+// ── TikZ figure test-compilation ────────────────────────────────────
+
+export interface TikZTestResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Test-compile a single TikZ snippet by wrapping in a standalone document.
+ * Uses the same compilation pipeline (own service or ytotech).
+ */
+export async function testCompileTikZ(tikzCode: string): Promise<TikZTestResult> {
+  const testDoc = `\\documentclass[border=2mm]{standalone}
+\\usepackage{tikz}
+\\usepackage{pgfplots}
+\\pgfplotsset{compat=1.18}
+\\usetikzlibrary{calc, patterns, angles, quotes, positioning}
+\\usepackage{amsmath, amssymb}
+\\begin{document}
+${tikzCode}
+\\end{document}
+`;
+
+  try {
+    const result = await tryCompile(testDoc, "pdflatex");
+    if (result.ok) {
+      return { success: true };
+    }
+    return { success: false, error: result.error || "Unknown compilation error" };
+  } catch (err) {
+    return {
+      success: false,
+      error: `TikZ test failed: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
 export interface LatexResource {
   path: string;
   file: string; // base64-encoded binary content

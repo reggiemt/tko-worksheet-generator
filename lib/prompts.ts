@@ -1,6 +1,11 @@
 import { getSubcategoryById } from "./categories";
 import type { Difficulty, ProblemModifiers } from "./types";
 
+// Categories that need high visual density (60%+)
+const HIGH_VISUAL_CATEGORIES = ["geometry"];
+// Categories that benefit from moderate visuals (40%)
+const MEDIUM_VISUAL_CATEGORIES = ["data"];
+
 export const SYSTEM_PROMPT = `You are an expert SAT Math problem generator. Your role is to create authentic, high-quality SAT practice problems that match the style, difficulty, and format of real College Board SAT Math questions.
 
 ## Core Principles
@@ -248,6 +253,19 @@ export function buildUserPrompt(
     ? `2. ALL problems should be grid-in (student-produced response) — no multiple choice`
     : `2. Include ${Math.max(1, Math.floor(questionCount / 6))} to ${Math.ceil(questionCount / 5)} grid-in (student-produced response) problems`;
 
+  // Topic-aware visual targets
+  let visualInstruction: string;
+  if (HIGH_VISUAL_CATEGORIES.includes(category)) {
+    const visualCount = Math.round(questionCount * 0.65);
+    visualInstruction = `3. Include visual elements (TikZ graphics) for AT LEAST ${visualCount} of the ${questionCount} problems. This is a geometry topic — MOST problems should have diagrams. Problems about parallel lines MUST show the lines and transversal. Problems about triangles MUST show the triangle with labeled sides/angles. Problems about circles MUST show the circle. Only pure computational problems (e.g., "what is the perimeter if sides are...") can skip figures.`;
+  } else if (MEDIUM_VISUAL_CATEGORIES.includes(category)) {
+    const visualCount = Math.round(questionCount * 0.4);
+    visualInstruction = `3. Include visual elements (TikZ graphics) for approximately ${visualCount} problems. Use graphs, tables, scatterplots, or histograms where appropriate for data analysis.`;
+  } else {
+    const visualCount = Math.round(questionCount * 0.3);
+    visualInstruction = `3. Include visual elements (TikZ graphics) for approximately ${visualCount} problems where appropriate (coordinate planes, function graphs, etc.)`;
+  }
+
   return `Generate exactly ${questionCount} SAT Math problems for the topic: ${topicName}
 
 Topic description: ${topicDescription}
@@ -258,7 +276,7 @@ ${difficultyGuide[difficulty]}${modifierSection}
 Requirements:
 1. Create exactly ${questionCount} problems numbered 1 through ${questionCount}
 ${gridInInstruction}
-3. Include visual elements (TikZ graphics) for approximately ${Math.round(questionCount * 0.3)} problems where appropriate for this topic
+${visualInstruction}
 4. Use the reverse construction method - start with clean answers
 5. Verify each answer mathematically before including
 6. Make distractors plausible but definitively wrong
@@ -368,7 +386,7 @@ Requirements:
 1. Create exactly ${questionCount} problems numbered 1 through ${questionCount}
 ${gridInInstruction}
 3. Mix the topics throughout the worksheet — do NOT group all problems from the same topic together. Interleave them.
-4. Include visual elements (TikZ graphics) for approximately ${Math.round(questionCount * 0.3)} problems where appropriate
+4. Include visual elements (TikZ graphics) for approximately ${Math.round(questionCount * 0.4)} problems where appropriate. Geometry problems MUST have diagrams. Data problems should have graphs/tables where relevant.
 5. Use the reverse construction method - start with clean answers
 6. Verify each answer mathematically before including
 7. Make distractors plausible but definitively wrong
