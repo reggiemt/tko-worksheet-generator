@@ -444,6 +444,54 @@ Used for: triangle properties, similarity, congruence, area problems.
   \\\\draw ($(A)!0.55!(B)$) -- ++(0.15,0.15);
   \`\`\`
 
+### Interior Lines (Midsegments, Medians, Altitudes, Parallel Cut Lines)
+
+When a problem involves points on the sides of a triangle (midpoints, midsegments, parallel lines cutting through):
+
+1. **Points M, N, D, E on triangle sides**: Place them ON the triangle edges using the calc library:
+   \`\`\`latex
+   % M is the midpoint of AB, N is the midpoint of AC
+   \\\\coordinate (M) at ($(A)!0.5!(B)$);
+   \\\\coordinate (N) at ($(A)!0.5!(C)$);
+   \`\`\`
+
+2. **The segment MN must connect these points on the edges** — draw it as part of the triangle figure:
+   \`\`\`latex
+   \\\\draw[thick] (M) -- (N);
+   \`\`\`
+
+3. **Label interior points OUTSIDE the triangle** to avoid clutter:
+   \`\`\`latex
+   \\\\node[below left] at (M) {$M$};   % outside the triangle
+   \\\\node[below right] at (N) {$N$};  % outside the triangle
+   \`\`\`
+   Use the direction that points AWAY from the triangle interior. For a point on the left side, use \`left\` or \`below left\`. For a point on the right side, use \`right\` or \`below right\`. For a point on the base, use \`below\`.
+
+4. **Complete example — Triangle with midsegment:**
+   \`\`\`latex
+   \\\\begin{tikzpicture}[scale=0.8]
+   \\\\coordinate (A) at (2.5,4);
+   \\\\coordinate (B) at (0,0);
+   \\\\coordinate (C) at (6,0);
+   % Triangle
+   \\\\draw[thick] (A) -- (B) -- (C) -- cycle;
+   % Midpoints on triangle sides
+   \\\\coordinate (M) at ($(A)!0.5!(B)$);
+   \\\\coordinate (N) at ($(A)!0.5!(C)$);
+   % Midsegment
+   \\\\draw[thick] (M) -- (N);
+   % Labels — vertices outside, midpoints outside the triangle
+   \\\\node[above] at (A) {$A$};
+   \\\\node[below left] at (B) {$B$};
+   \\\\node[below right] at (C) {$C$};
+   \\\\node[left] at (M) {$M$};
+   \\\\node[right] at (N) {$N$};
+   % Side labels
+   \\\\node[below] at ($(B)!0.5!(C)$) {$12$};
+   \\\\node[above, yshift=2pt] at ($(M)!0.5!(N)$) {$6$};
+   \\\\end{tikzpicture}
+   \`\`\`
+
 ---
 
 ## 7. Parallel Lines and Transversals (TikZ)
@@ -463,7 +511,20 @@ Used for: angle relationships, alternate interior/exterior angles, corresponding
 
 The three coordinates mean: the angle at VERTEX, sweeping counterclockwise from ray VERTEX→A to ray VERTEX→C.
 
-**To get the ACUTE angle**: put the coordinate that is more CLOCKWISE first. Example: if one ray points right (0°) and another points upper-left (120°), use \`{angle = right-point--V--upper-left-point}\` to get the 120° sweep, or \`{angle = upper-left-point--V--right-point}\` to get the 240° reflex. The FIRST coordinate is where the arc STARTS.
+**To get the ACUTE angle**: put the coordinate that is more CLOCKWISE first. The FIRST coordinate is where the arc STARTS, and it sweeps counterclockwise to the THIRD.
+
+### ⚠️ MANDATORY Verification Step (Do This For EVERY pic {angle})
+
+After writing any \`pic {angle = A--V--C}\`, mentally verify:
+1. **Visualize** the two rays V→A and V→C
+2. **Sweep counterclockwise** from A to C — is this the angle you want to mark?
+3. **If the sweep would be > 180°** (i.e., you'd go most of the way around), **SWAP A and C**
+4. **For acute angles at parallel line intersections**: the sweep should be 30°–80° typically. If it looks like it would be 280°+, you have the coordinates backwards.
+
+**Example mental check:**
+- Ray to the right (0°) and ray going down-right (315°/-45°)
+- \`{angle = down-right--V--right}\`: sweeps CCW from 315° to 360° = 45° ✓ SMALL
+- \`{angle = right--V--down-right}\`: sweeps CCW from 0° to 315° = 315° ✗ HUGE — swap!
 
 ### Template — Single Transversal
 
@@ -539,6 +600,7 @@ Where P-up is a point on the transversal above the intersection.
 ### Rules
 
 - **ALWAYS use \`pic {angle}\`** for angle markers at line intersections. Never manual \`arc\`.
+- **VERIFY EVERY \`pic {angle}\`**: After writing \`pic {angle = A--V--C}\`, mentally check — does sweeping counterclockwise from A to C give the angle you want? If the sweep would be > 180°, SWAP A and C. Acute angles at transversal intersections should sweep 30°–80°, never 280°+.
 - **Name every intersection** with \`\\\\coordinate (X) at (intersection of ...)\`.
 - **Name ray endpoints** clearly (e.g., \`P-right\`, \`P-down\`, \`Q-left\`, \`Q-up\`).
 - **Label parallel lines** with lowercase letters ($\\\\ell$, $m$ or $p$, $q$).
