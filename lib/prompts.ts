@@ -383,8 +383,8 @@ Used for: triangle properties, similarity, congruence, area problems.
              -- cycle node[midway, above left] {$5$};
 % Right angle marker (REQUIRED for all right triangles)
 \\\\draw (3.7,0) -- (3.7,0.3) -- (4,0.3);
-% Angle label using pic {angle} — automatic arc placement
-\\\\pic [draw, angle radius=0.6cm, "$\\\\theta$"] {angle = B--A--C};
+% Angle label — placed inside the triangle near the vertex, no arc needed
+\\\\node at (0.6,0.25) {$\\\\theta$};
 \\\\end{tikzpicture}
 \`\`\`
 
@@ -437,7 +437,17 @@ Used for: triangle properties, similarity, congruence, area problems.
 - **Use \`scale\`** to control triangle size. Typical range: \`scale=0.5\` to \`scale=0.9\`.
 - **Label vertices** with uppercase letters ($A$, $B$, $C$).
 - **Label side lengths** using \`node[midway, below]\` or the \`$(A)!0.5!(B)$\` calc syntax for precise midpoint placement.
-- **Angle labels**: Use \`\\\\pic [draw, angle radius=0.6cm, "$\\\\theta$"] {angle = B--A--C};\` — this automatically draws the arc and label in the correct position. NEVER place angle labels with manual \\\\node positioning.
+- **Angle labels**: Place as a \`\\\\node\` inside the triangle near the vertex. No arcs. Example: \`\\\\node at (0.6,0.25) {$\\\\theta$};\` — position it slightly inward from the vertex along the angle bisector.
+- **Side length labels MUST be OUTSIDE the triangle and CENTERED on the side**. Use the calc midpoint syntax with a direction pointing AWAY from the triangle interior:
+  \`\`\`latex
+  % Left side — label goes to the LEFT (outside)
+  \\\\node[left] at ($(A)!0.5!(B)$) {$8$};
+  % Right side — label goes to the RIGHT (outside)
+  \\\\node[right] at ($(B)!0.5!(C)$) {$6$};
+  % Bottom side — label goes BELOW (outside)
+  \\\\node[below] at ($(A)!0.5!(C)$) {$10$};
+  \`\`\`
+  NEVER place side labels inside the triangle. Always use \`$(A)!0.5!(B)$\` for centering.
 - **For congruent marks** (tick marks on equal sides), use:
   \`\`\`latex
   \\\\draw ($(A)!0.45!(B)$) -- ++(0.15,0.15);
@@ -498,33 +508,14 @@ When a problem involves points on the sides of a triangle (midpoints, midsegment
 
 Used for: angle relationships, alternate interior/exterior angles, corresponding angles.
 
-**CRITICAL: Use \`pic {angle}\` for ALL angle markers at line intersections. NEVER use manual \`arc\` commands for angles at intersections — they are error-prone. The \`angles\` library (already loaded) computes the correct arc position automatically from three named coordinates.**
+**CRITICAL: Do NOT draw angle arcs on parallel line / transversal diagrams. Just place the angle label (letter or number) as a \\\\node near the correct region of the intersection. This is how SAT prep materials present angles — no arcs needed.**
 
-### How \`pic {angle}\` Works
+### How to Label Angles at Intersections
 
-\`\`\`latex
-% pic {angle = A--VERTEX--C} draws an arc at VERTEX
-% It sweeps COUNTERCLOCKWISE from ray VERTEX→A to ray VERTEX→C
-% The label is placed inside the arc automatically.
-\\\\pic [draw, angle radius=0.5cm, "$x°$"] {angle = A--VERTEX--C};
-\`\`\`
-
-The three coordinates mean: the angle at VERTEX, sweeping counterclockwise from ray VERTEX→A to ray VERTEX→C.
-
-**To get the ACUTE angle**: put the coordinate that is more CLOCKWISE first. The FIRST coordinate is where the arc STARTS, and it sweeps counterclockwise to the THIRD.
-
-### ⚠️ MANDATORY Verification Step (Do This For EVERY pic {angle})
-
-After writing any \`pic {angle = A--V--C}\`, mentally verify:
-1. **Visualize** the two rays V→A and V→C
-2. **Sweep counterclockwise** from A to C — is this the angle you want to mark?
-3. **If the sweep would be > 180°** (i.e., you'd go most of the way around), **SWAP A and C**
-4. **For acute angles at parallel line intersections**: the sweep should be 30°–80° typically. If it looks like it would be 280°+, you have the coordinates backwards.
-
-**Example mental check:**
-- Ray to the right (0°) and ray going down-right (315°/-45°)
-- \`{angle = down-right--V--right}\`: sweeps CCW from 315° to 360° = 45° ✓ SMALL
-- \`{angle = right--V--down-right}\`: sweeps CCW from 0° to 315° = 315° ✗ HUGE — swap!
+At each intersection of a transversal with a parallel line, there are 4 angles (2 acute, 2 obtuse). To label a specific angle:
+1. Identify which of the 4 quadrants around the intersection the angle occupies
+2. Place a \`\\\\node\` with the label in that quadrant, offset from the intersection point
+3. Use positioning like \`above right\`, \`below left\`, etc. with \`xshift\`/\`yshift\` for fine control
 
 ### Template — Single Transversal
 
@@ -535,21 +526,14 @@ After writing any \`pic {angle = A--V--C}\`, mentally verify:
 \\\\draw[thick] (0,0) -- (7,0) node[right] {$q$};
 % Transversal — extends beyond both lines
 \\\\draw[thick] (1.5,3.2) -- (5.5,-1.2);
-% Name the intersection points
+% Name intersection points
 \\\\coordinate (P) at (intersection of 0,2--7,2 and 1.5,3.2--5.5,-1.2);
 \\\\coordinate (Q) at (intersection of 0,0--7,0 and 1.5,3.2--5.5,-1.2);
-% Name points on each ray (for angle measurement)
-% At P: right along line p, and down along transversal
-\\\\coordinate (P-right) at (7,2);
-\\\\coordinate (P-down) at (5.5,-1.2);
-% At Q: left along line q, and up along transversal
-\\\\coordinate (Q-left) at (0,0);
-\\\\coordinate (Q-up) at (1.5,3.2);
-% Angle x° at P: between transversal-going-down and line-going-right (acute angle below-right)
-\\\\pic [draw, angle radius=0.5cm, "$x°$"] {angle = P-down--P--P-right};
-% Angle y° at Q: acute angle above line q, left of transversal (alternate interior to x°)
-% Sweeps CCW from Q-up to Q-left (small sweep = acute angle)
-\\\\pic [draw, angle radius=0.5cm, "$y°$"] {angle = Q-up--Q--Q-left};
+% Angle labels — NO arcs, just labels placed in the correct quadrant
+% x° at P: acute angle below-right (between line going right and transversal going down)
+\\\\node[below right, xshift=2pt, yshift=-2pt] at (P) {$x°$};
+% y° at Q: alternate interior angle above-left (between transversal going up and line going left)
+\\\\node[above left, xshift=-2pt, yshift=2pt] at (Q) {$y°$};
 \\\\end{tikzpicture}
 \`\`\`
 
@@ -568,46 +552,27 @@ After writing any \`pic {angle = A--V--C}\`, mentally verify:
 \\\\coordinate (A) at (intersection of 0,2.5--8,2.5 and 1,4--4,-1.5);
 \\\\coordinate (B) at (intersection of 0,2.5--8,2.5 and 4,4--7,-1.5);
 \\\\coordinate (C) at (intersection of 0,0--8,0 and 4,4--7,-1.5);
-% Ray endpoints for angle measurement
-\\\\coordinate (A-right) at (8,2.5);
-\\\\coordinate (A-down) at (4,-1.5);
-\\\\coordinate (B-left) at (A);         % left along line m toward A
-\\\\coordinate (B-down) at (7,-1.5);
-\\\\coordinate (C-right) at (8,0);
-\\\\coordinate (C-up) at (4,4);
-% Angle p at A
-\\\\pic [draw, angle radius=0.5cm, "$p°$"] {angle = A-down--A--A-right};
-% Angle q at B
-\\\\pic [draw, angle radius=0.5cm, "$q°$"] {angle = B-down--B--B-left};
-% Angle r at C: acute angle between transversal going up and line n going right
-\\\\pic [draw, angle radius=0.5cm, "$r°$"] {angle = C-up--C--C-right};
+% Angle labels — placed in the correct quadrant, no arcs
+\\\\node[below right, xshift=2pt, yshift=-2pt] at (A) {$a°$};
+\\\\node[below left, xshift=-2pt, yshift=-2pt] at (B) {$b°$};
+\\\\node[above right, xshift=2pt, yshift=2pt] at (C) {$c°$};
 \\\\end{tikzpicture}
 \`\`\`
 
-### Template — Marking an Obtuse Angle
-
-To mark the obtuse angle instead of the acute angle, swap the order of the two ray endpoints. \`pic {angle = A--V--C}\` sweeps counterclockwise from ray V→A to ray V→C, so:
-
-\`\`\`latex
-% Acute angle (below-right of intersection):
-\\\\pic [draw, angle radius=0.5cm, "$x°$"] {angle = P-down--P--P-right};
-% Obtuse angle (above-right of intersection) — just swap the ray order:
-\\\\pic [draw, angle radius=0.5cm, "$x°$"] {angle = P-right--P--P-up};
-\`\`\`
-
-Where P-up is a point on the transversal above the intersection.
-
 ### Rules
 
-- **ALWAYS use \`pic {angle}\`** for angle markers at line intersections. Never manual \`arc\`.
-- **VERIFY EVERY \`pic {angle}\`**: After writing \`pic {angle = A--V--C}\`, mentally check — does sweeping counterclockwise from A to C give the angle you want? If the sweep would be > 180°, SWAP A and C. Acute angles at transversal intersections should sweep 30°–80°, never 280°+.
+- **NO angle arcs** on parallel line/transversal diagrams. Labels only.
+- **Place angle labels in the correct quadrant** of the intersection using \`\\\\node[position]\`.
+- **Use \`xshift\`/\`yshift\` (2-4pt)** to push labels away from the intersection point so they don't sit on the lines.
 - **Name every intersection** with \`\\\\coordinate (X) at (intersection of ...)\`.
-- **Name ray endpoints** clearly (e.g., \`P-right\`, \`P-down\`, \`Q-left\`, \`Q-up\`).
 - **Label parallel lines** with lowercase letters ($\\\\ell$, $m$ or $p$, $q$).
 - **The transversal** should extend visibly beyond both parallel lines.
-- **\`angle radius=0.5cm\`** is the default arc size. Use 0.4cm for tight spaces.
 - **For multiple transversals**, use different dash styles to distinguish them.
-- **Angle label font**: Use \`"$x°$"\` (with quotes — the \`quotes\` library handles placement).
+- **Which quadrant?** Think about where the angle actually is:
+  - Acute angle below-right of intersection → \`below right\`
+  - Acute angle above-left → \`above left\`
+  - Obtuse angle above-right → \`above right\`
+  - The label should sit INSIDE the angle region it represents.
 
 ---
 
@@ -718,15 +683,17 @@ Used for: central angles, inscribed angles, arc length, sector area, tangent lin
 
 These rules prevent the most common TikZ errors. **Every arc must follow these rules.**
 
-### IMPORTANT: When to Use \`pic {angle}\` vs Manual \`arc\`
+### IMPORTANT: When to Draw Arcs vs Labels Only
 
 | Situation | Method | Why |
 |-----------|--------|-----|
-| Angle at line intersection (parallel lines, transversals, triangles) | **\`pic {angle}\`** (REQUIRED) | TikZ computes position automatically — no manual angle math |
+| Angles at parallel line / transversal intersections | **Label only (\\\\node)** — NO arcs | Arcs are error-prone at intersections; SAT materials use labels only |
+| Angles inside triangles | **Label only (\\\\node)** — NO arcs | Place label near vertex inside the triangle |
+| Right angles | **Square marker** (small drawn square) | Standard convention |
 | Highlighted arc on a circle circumference | Manual \`arc\` | Need to trace along the circle's path |
-| Central/inscribed angle marker at circle center | **\`pic {angle}\`** (preferred) or manual \`arc\` | Either works; \`pic\` is safer |
+| Central/inscribed angle marker at circle center | Manual \`arc\` or \`pic {angle}\` | Required to show the angle measure |
 
-**NEVER use manual \`arc\` commands for angle markers at line intersections.** Use \`pic {angle = C--VERTEX--B}\` which sweeps counterclockwise from ray VERTEX→B to ray VERTEX→C. See Section 7 for examples.
+**NEVER draw angle arcs at line intersections or inside triangles.** Just use \\\\node labels. Arc commands are reserved for circles only.
 
 ### Core Principle (for manual arcs on circles)
 

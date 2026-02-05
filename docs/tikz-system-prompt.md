@@ -299,8 +299,8 @@ Used for: triangle properties, similarity, congruence, area problems.
              -- cycle node[midway, above left] {$5$};
 % Right angle marker (REQUIRED for all right triangles)
 \draw (3.7,0) -- (3.7,0.3) -- (4,0.3);
-% Angle label using pic {angle} — automatic arc placement
-\pic [draw, angle radius=0.6cm, "$\theta$"] {angle = B--A--C};
+% Angle label — placed inside the triangle near the vertex, no arc needed
+\node at (0.6,0.25) {$\theta$};
 \end{tikzpicture}
 ```
 
@@ -353,7 +353,17 @@ Used for: triangle properties, similarity, congruence, area problems.
 - **Use `scale`** to control triangle size. Typical range: `scale=0.5` to `scale=0.9`.
 - **Label vertices** with uppercase letters ($A$, $B$, $C$).
 - **Label side lengths** using `node[midway, below]` or the `$(A)!0.5!(B)$` calc syntax for precise midpoint placement.
-- **Angle labels**: Use `\pic [draw, angle radius=0.6cm, "$\theta$"] {angle = B--A--C};` — this automatically draws the arc and label in the correct position. NEVER place angle labels with manual \node positioning.
+- **Angle labels**: Place as a `\node` inside the triangle near the vertex. No arcs. Example: `\node at (0.6,0.25) {$\theta$};` — position it slightly inward from the vertex along the angle bisector.
+- **Side length labels MUST be OUTSIDE the triangle and CENTERED on the side**. Use the calc midpoint syntax with a direction pointing AWAY from the triangle interior:
+  ```latex
+  % Left side — label goes to the LEFT (outside)
+  \node[left] at ($(A)!0.5!(B)$) {$8$};
+  % Right side — label goes to the RIGHT (outside)
+  \node[right] at ($(B)!0.5!(C)$) {$6$};
+  % Bottom side — label goes BELOW (outside)
+  \node[below] at ($(A)!0.5!(C)$) {$10$};
+  ```
+  NEVER place side labels inside the triangle. Always use `$(A)!0.5!(B)$` for centering.
 - **For congruent marks** (tick marks on equal sides), use:
   ```latex
   \draw ($(A)!0.45!(B)$) -- ++(0.15,0.15);
