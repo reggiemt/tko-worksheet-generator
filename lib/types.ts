@@ -50,6 +50,7 @@ export interface Problem {
   isGridIn: boolean;
   hasVisual: boolean;
   visualCode?: string;
+  figureDescription?: string;
 }
 
 export interface Answer {

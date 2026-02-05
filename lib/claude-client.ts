@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { SYSTEM_PROMPT, buildUserPrompt, buildMultiTopicUserPrompt } from "./prompts";
+import { SYSTEM_PROMPT, TIKZ_SYSTEM_PROMPT, buildUserPrompt, buildMultiTopicUserPrompt } from "./prompts";
 import type { Difficulty, GeneratedWorksheet, Problem, Answer, ProblemModifiers } from "./types";
 import { testCompileTikZ } from "./latex-client";
 
@@ -115,15 +115,20 @@ export async function generateProblems(params: GenerateParams): Promise<Generate
 
   // Diagnostic: log visual stats
   const visualProblems = parsed.problems.filter(p => p.hasVisual);
+  const withDescription = visualProblems.filter(p => p.figureDescription);
   const withCode = visualProblems.filter(p => p.visualCode);
-  console.log(`[GENERATE] Visuals: ${visualProblems.length}/${parsed.problems.length} problems have hasVisual=true, ${withCode.length} have visualCode set`);
+  console.log(`[GENERATE] Visuals: ${visualProblems.length}/${parsed.problems.length} have hasVisual=true, ${withDescription.length} have figureDescription, ${withCode.length} have visualCode`);
   for (const p of visualProblems) {
+    const descPreview = p.figureDescription ? p.figureDescription.substring(0, 80) : "(null)";
     const codePreview = p.visualCode ? p.visualCode.substring(0, 80) : "(null)";
-    console.log(`[GENERATE]   Problem #${p.number}: visualCode = ${codePreview}...`);
+    console.log(`[GENERATE]   Problem #${p.number}: desc=${descPreview}... | code=${codePreview}...`);
   }
 
-  // Validate and fix TikZ figures
-  const fixedProblems = await validateAndFixFigures(client, parsed.problems);
+  // Step 2: Generate TikZ figures from descriptions (dedicated API calls)
+  const withFigures = await generateAllFigures(client, parsed.problems);
+
+  // Step 3: Validate and fix TikZ figures (test-compile + auto-fix)
+  const fixedProblems = await validateAndFixFigures(client, withFigures);
 
   return {
     problems: fixedProblems,
@@ -285,6 +290,121 @@ Output ONLY the fixed code:`,
  * Strip "In the figure below" and similar references when no figure exists.
  * Capitalizes the first letter of the remaining text.
  */
+/**
+ * Generate TikZ code for a single figure using a dedicated, focused prompt.
+ * This is called separately from problem generation so the TikZ model
+ * gets a clean, focused context with only figure-generation rules.
+ */
+async function generateFigure(
+  client: Anthropic,
+  problemContent: string,
+  figureDescription: string
+): Promise<string | null> {
+  try {
+    const startTime = Date.now();
+    console.log(`[FIGURE-GEN] Generating figure for: ${figureDescription.substring(0, 80)}...`);
+
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 2000,
+      system: TIKZ_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Generate TikZ code for this SAT math problem figure.
+
+Problem: ${problemContent}
+
+Figure description: ${figureDescription}
+
+Output ONLY the TikZ code (a complete \\begin{tikzpicture}...\\end{tikzpicture} environment):`,
+        },
+        {
+          role: "assistant",
+          content: "\\begin{tikzpicture}",
+        },
+      ],
+    });
+
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    const content = response.content[0];
+    if (content.type !== "text") return null;
+
+    const tikzCode = "\\begin{tikzpicture}" + content.text;
+
+    // Trim anything after the closing tag
+    const endIdx = tikzCode.lastIndexOf("\\end{tikzpicture}");
+    if (endIdx === -1) {
+      console.warn(`[FIGURE-GEN] No \\end{tikzpicture} found after ${elapsed}s`);
+      return null;
+    }
+
+    const finalCode = tikzCode.substring(0, endIdx + "\\end{tikzpicture}".length);
+    const inputTokens = response.usage?.input_tokens ?? 0;
+    const outputTokens = response.usage?.output_tokens ?? 0;
+    console.log(`[FIGURE-GEN] OK in ${elapsed}s | tokens: ${inputTokens}in/${outputTokens}out | code: ${finalCode.length} chars`);
+    return finalCode;
+  } catch (err) {
+    console.error(`[FIGURE-GEN] Failed: ${err}`);
+    return null;
+  }
+}
+
+/**
+ * Generate TikZ figures for all problems that have figureDescriptions.
+ * Runs in parallel for speed.
+ */
+async function generateAllFigures(
+  client: Anthropic,
+  problems: Problem[]
+): Promise<Problem[]> {
+  const figureProblems = problems.filter(p => p.hasVisual && p.figureDescription && !p.visualCode);
+
+  if (figureProblems.length === 0) {
+    console.log(`[FIGURE-GEN] No figures to generate`);
+    return problems;
+  }
+
+  console.log(`[FIGURE-GEN] Generating ${figureProblems.length} figures in parallel...`);
+  const startTime = Date.now();
+
+  const figurePromises = figureProblems.map(p =>
+    generateFigure(client, p.content, p.figureDescription!).then(code => ({
+      number: p.number,
+      code,
+    }))
+  );
+
+  const results = await Promise.all(figurePromises);
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+
+  let generated = 0;
+  let failed = 0;
+
+  const updatedProblems = problems.map(p => {
+    const result = results.find(r => r.number === p.number);
+    if (result) {
+      if (result.code) {
+        generated++;
+        return { ...p, visualCode: result.code };
+      } else {
+        failed++;
+        // Strip figure references if generation failed
+        return {
+          ...p,
+          hasVisual: false,
+          figureDescription: undefined,
+          content: stripFigureReferences(p.content),
+        };
+      }
+    }
+    return p;
+  });
+
+  console.log(`[FIGURE-GEN] Done in ${elapsed}s: ${generated} generated, ${failed} failed`);
+  return updatedProblems;
+}
+
 function stripFigureReferences(text: string): string {
   let cleaned = text
     .replace(/[Ii]n the figure below,?\s*/g, "")
@@ -475,6 +595,7 @@ function parseClaudeResponse(text: string): ParsedResponse {
       isGridIn: Boolean(p.isGridIn),
       hasVisual: Boolean(p.hasVisual),
       visualCode: p.visualCode ? String(p.visualCode) : undefined,
+      figureDescription: p.figureDescription ? String(p.figureDescription) : undefined,
     }));
 
     const answers: Answer[] = parsed.answers.map((a: Record<string, unknown>, i: number) => ({
