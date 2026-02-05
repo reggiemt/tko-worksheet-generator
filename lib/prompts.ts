@@ -383,8 +383,8 @@ Used for: triangle properties, similarity, congruence, area problems.
              -- cycle node[midway, above left] {$5$};
 % Right angle marker (REQUIRED for all right triangles)
 \\\\draw (3.7,0) -- (3.7,0.3) -- (4,0.3);
-% Angle label (optional)
-\\\\node at (0.8,0.25) {$\\\\theta$};
+% Angle label using pic {angle} — automatic arc placement
+\\\\pic [draw, angle radius=0.6cm, "$\\\\theta$"] {angle = B--A--C};
 \\\\end{tikzpicture}
 \`\`\`
 
@@ -437,7 +437,7 @@ Used for: triangle properties, similarity, congruence, area problems.
 - **Use \`scale\`** to control triangle size. Typical range: \`scale=0.5\` to \`scale=0.9\`.
 - **Label vertices** with uppercase letters ($A$, $B$, $C$).
 - **Label side lengths** using \`node[midway, below]\` or the \`$(A)!0.5!(B)$\` calc syntax for precise midpoint placement.
-- **Angle labels** go inside the triangle near the vertex, offset slightly.
+- **Angle labels**: Use \`\\\\pic [draw, angle radius=0.6cm, "$\\\\theta$"] {angle = B--A--C};\` — this automatically draws the arc and label in the correct position. NEVER place angle labels with manual \\\\node positioning.
 - **For congruent marks** (tick marks on equal sides), use:
   \`\`\`latex
   \\\\draw ($(A)!0.45!(B)$) -- ++(0.15,0.15);
@@ -450,33 +450,102 @@ Used for: triangle properties, similarity, congruence, area problems.
 
 Used for: angle relationships, alternate interior/exterior angles, corresponding angles.
 
-### Template
+**CRITICAL: Use \`pic {angle}\` for ALL angle markers at line intersections. NEVER use manual \`arc\` commands for angles at intersections — they are error-prone. The \`angles\` library (already loaded) computes the correct arc position automatically from three named coordinates.**
+
+### How \`pic {angle}\` Works
+
+\`\`\`latex
+% pic {angle = A--VERTEX--C} draws an arc at VERTEX
+% It sweeps COUNTERCLOCKWISE from ray VERTEX→A to ray VERTEX→C
+% The label is placed inside the arc automatically.
+\\\\pic [draw, angle radius=0.5cm, "$x°$"] {angle = A--VERTEX--C};
+\`\`\`
+
+The three coordinates mean: the angle at VERTEX, sweeping counterclockwise from ray VERTEX→A to ray VERTEX→C.
+
+**To get the ACUTE angle**: put the coordinate that is more CLOCKWISE first. Example: if one ray points right (0°) and another points upper-left (120°), use \`{angle = right-point--V--upper-left-point}\` to get the 120° sweep, or \`{angle = upper-left-point--V--right-point}\` to get the 240° reflex. The FIRST coordinate is where the arc STARTS.
+
+### Template — Single Transversal
 
 \`\`\`latex
 \\\\begin{tikzpicture}[scale=0.8]
 % Parallel lines
-\\\\draw[thick] (0,2) -- (6,2) node[right] {$p$};
-\\\\draw[thick] (0,0) -- (6,0) node[right] {$q$};
-% Transversal
-\\\\draw[thick] (1.5,3) -- (4.5,-1);
-% Angle arcs
-\\\\draw (2.4,2) arc (180:225:0.5);
-\\\\node at (1.9,1.6) {$x°$};
-\\\\draw (3.6,0) arc (0:45:0.5);
-\\\\node at (4.1,0.4) {$y°$};
+\\\\draw[thick] (0,2) -- (7,2) node[right] {$p$};
+\\\\draw[thick] (0,0) -- (7,0) node[right] {$q$};
+% Transversal — extends beyond both lines
+\\\\draw[thick] (1.5,3.2) -- (5.5,-1.2);
+% Name the intersection points
+\\\\coordinate (P) at (intersection of 0,2--7,2 and 1.5,3.2--5.5,-1.2);
+\\\\coordinate (Q) at (intersection of 0,0--7,0 and 1.5,3.2--5.5,-1.2);
+% Name points on each ray (for angle measurement)
+% At P: right along line p, and down along transversal
+\\\\coordinate (P-right) at (7,2);
+\\\\coordinate (P-down) at (5.5,-1.2);
+% At Q: left along line q, and up along transversal
+\\\\coordinate (Q-left) at (0,0);
+\\\\coordinate (Q-up) at (1.5,3.2);
+% Angle x° at P: between transversal-going-down and line-going-right (acute angle below-right)
+\\\\pic [draw, angle radius=0.5cm, "$x°$"] {angle = P-down--P--P-right};
+% Angle y° at Q: acute angle above line q, left of transversal (alternate interior to x°)
+% Sweeps CCW from Q-up to Q-left (small sweep = acute angle)
+\\\\pic [draw, angle radius=0.5cm, "$y°$"] {angle = Q-up--Q--Q-left};
 \\\\end{tikzpicture}
 \`\`\`
 
+### Template — Two Transversals
+
+\`\`\`latex
+\\\\begin{tikzpicture}[scale=0.8]
+% Parallel lines
+\\\\draw[thick] (0,2.5) -- (8,2.5) node[right] {$m$};
+\\\\draw[thick] (0,0) -- (8,0) node[right] {$n$};
+% Transversal 1
+\\\\draw[thick] (1,4) -- (4,-1.5);
+% Transversal 2
+\\\\draw[thick] (4,4) -- (7,-1.5);
+% Intersection points
+\\\\coordinate (A) at (intersection of 0,2.5--8,2.5 and 1,4--4,-1.5);
+\\\\coordinate (B) at (intersection of 0,2.5--8,2.5 and 4,4--7,-1.5);
+\\\\coordinate (C) at (intersection of 0,0--8,0 and 4,4--7,-1.5);
+% Ray endpoints for angle measurement
+\\\\coordinate (A-right) at (8,2.5);
+\\\\coordinate (A-down) at (4,-1.5);
+\\\\coordinate (B-left) at (A);         % left along line m toward A
+\\\\coordinate (B-down) at (7,-1.5);
+\\\\coordinate (C-right) at (8,0);
+\\\\coordinate (C-up) at (4,4);
+% Angle p at A
+\\\\pic [draw, angle radius=0.5cm, "$p°$"] {angle = A-down--A--A-right};
+% Angle q at B
+\\\\pic [draw, angle radius=0.5cm, "$q°$"] {angle = B-down--B--B-left};
+% Angle r at C: acute angle between transversal going up and line n going right
+\\\\pic [draw, angle radius=0.5cm, "$r°$"] {angle = C-up--C--C-right};
+\\\\end{tikzpicture}
+\`\`\`
+
+### Template — Marking an Obtuse Angle
+
+To mark the obtuse angle instead of the acute angle, swap the order of the two ray endpoints. \`pic {angle = A--V--C}\` sweeps counterclockwise from ray V→A to ray V→C, so:
+
+\`\`\`latex
+% Acute angle (below-right of intersection):
+\\\\pic [draw, angle radius=0.5cm, "$x°$"] {angle = P-down--P--P-right};
+% Obtuse angle (above-right of intersection) — just swap the ray order:
+\\\\pic [draw, angle radius=0.5cm, "$x°$"] {angle = P-right--P--P-up};
+\`\`\`
+
+Where P-up is a point on the transversal above the intersection.
+
 ### Rules
 
-- **Label the parallel lines** with lowercase letters ($\\\\ell$, $m$ or $p$, $q$).
-- **The transversal** should visibly cross both lines and extend slightly beyond each.
-- **Angle arcs** use the \`arc\` command. Place them correctly at the intersection:
-  - The arc's center is the intersection point.
-  - \`start angle\` and \`end angle\` define which angle is marked.
-  - See the Arc Rules section below for correct arc placement.
-- **Angle labels** go near the arc, inside the marked angle.
+- **ALWAYS use \`pic {angle}\`** for angle markers at line intersections. Never manual \`arc\`.
+- **Name every intersection** with \`\\\\coordinate (X) at (intersection of ...)\`.
+- **Name ray endpoints** clearly (e.g., \`P-right\`, \`P-down\`, \`Q-left\`, \`Q-up\`).
+- **Label parallel lines** with lowercase letters ($\\\\ell$, $m$ or $p$, $q$).
+- **The transversal** should extend visibly beyond both parallel lines.
+- **\`angle radius=0.5cm\`** is the default arc size. Use 0.4cm for tight spaces.
 - **For multiple transversals**, use different dash styles to distinguish them.
+- **Angle label font**: Use \`"$x°$"\` (with quotes — the \`quotes\` library handles placement).
 
 ---
 
@@ -585,9 +654,19 @@ Used for: central angles, inscribed angles, arc length, sector area, tangent lin
 
 ## 9. Arc and Angle Marker Rules (CRITICAL — Read Before Drawing Any Arc)
 
-These rules prevent the most common TikZ errors in circle diagrams. **Every arc must follow these rules.**
+These rules prevent the most common TikZ errors. **Every arc must follow these rules.**
 
-### Core Principle
+### IMPORTANT: When to Use \`pic {angle}\` vs Manual \`arc\`
+
+| Situation | Method | Why |
+|-----------|--------|-----|
+| Angle at line intersection (parallel lines, transversals, triangles) | **\`pic {angle}\`** (REQUIRED) | TikZ computes position automatically — no manual angle math |
+| Highlighted arc on a circle circumference | Manual \`arc\` | Need to trace along the circle's path |
+| Central/inscribed angle marker at circle center | **\`pic {angle}\`** (preferred) or manual \`arc\` | Either works; \`pic\` is safer |
+
+**NEVER use manual \`arc\` commands for angle markers at line intersections.** Use \`pic {angle = C--VERTEX--B}\` which sweeps counterclockwise from ray VERTEX→B to ray VERTEX→C. See Section 7 for examples.
+
+### Core Principle (for manual arcs on circles)
 
 **Every arc's \`start angle\` and \`end angle\` must correspond to the actual angular positions of the points or rays involved — NEVER default to 0°.**
 
